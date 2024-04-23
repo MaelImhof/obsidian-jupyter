@@ -1,0 +1,11 @@
+{
+	"id": "jupyter-notebook",
+	"name": "Jupyter Notebook",
+	"version": "0.1.0",
+	"minAppVersion": "0.15.0",
+	"description": "Integrates Jupyter Notebooks in Obsidian.",
+	"author": "Maël Imhof",
+	"authorUrl": "https://www.mael.im",
+	"fundingUrl": "",
+	"isDesktopOnly": true
+}
