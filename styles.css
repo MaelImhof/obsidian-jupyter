@@ -6,3 +6,13 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.jupyter-view-container {
+    height: 100%;
+    width: 100%;
+}
+
+.jupyter-view-iframe {
+    height: 100%;
+    width: 100%;
+}

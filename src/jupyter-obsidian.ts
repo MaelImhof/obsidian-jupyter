@@ -1,7 +1,8 @@
-import { FileSystemAdapter, Notice, Plugin } from "obsidian";
-import { spawnJupyterEnv, JupyterEnv, JupyterEnvEvent } from "src/jupyter-env";
+import { FileSystemAdapter, Notice, Plugin, WorkspaceLeaf } from "obsidian";
+import { spawnJupyterEnv, JupyterEnv, JupyterEnvEvent } from "./jupyter-env";
 // @ts-ignore
 import { shell } from "electron";
+import { ExampleView } from "./jupyter-view";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -9,6 +10,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 
     async onload() {
 		this.addRibbonIcon("monitor-play", "Start Jupyter", this.startJupyter.bind(this));
+		this.registerView(
+			"jupyter-view",
+			(leaf) => new ExampleView(leaf)
+		);
+		this.registerExtensions(["ipynb"], "jupyter-view");
 	}
 
 	async startJupyter() {
@@ -35,6 +41,26 @@ export default class JupyterNotebookPlugin extends Plugin {
 			shell.openExternal(url);
 		}).bind(this));
 	}
+
+	// async activateView() {
+	// 	const { workspace } = this.app;
+	
+	// 	let leaf: WorkspaceLeaf | null = null;
+	// 	const leaves = workspace.getLeavesOfType("jupyter-view");
+	
+	// 	if (leaves.length > 0) {
+	// 	  // A leaf with our view already exists, use that
+	// 	  leaf = leaves[0];
+	// 	} else {
+	// 	  // Our view could not be found in the workspace, create a new leaf
+	// 	  // in the right sidebar for it
+	// 	  leaf = workspace.getRightLeaf(false);
+	// 	  await leaf.setViewState({ type: "jupyter-view", active: true });
+	// 	}
+	
+	// 	// "Reveal" the leaf in case it is in a collapsed sidebar
+	// 	workspace.revealLeaf(leaf);
+	//   }
 
 	async onunload() {
 		// Kill the Jupyter Notebook process
