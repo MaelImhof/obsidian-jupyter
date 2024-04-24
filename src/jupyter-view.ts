@@ -1,33 +1,37 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { FileView, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import JupyterNotebookPlugin from "./jupyter-obsidian";
 
-export const VIEW_TYPE_EXAMPLE = "example-view";
+export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
-export class ExampleView extends ItemView {
-  constructor(leaf: WorkspaceLeaf) {
-    super(leaf);
-  }
+export class EmbeddedJupyterView extends FileView {
 
-  getViewType() {
-    return VIEW_TYPE_EXAMPLE;
-  }
+    constructor(leaf: WorkspaceLeaf, private plugin: JupyterNotebookPlugin) {
+        super(leaf);
+    }
 
-  getDisplayText() {
-    return "Example view";
-  }
+    getViewType(): string {
+        return JUPYTER_VIEW_TYPE;
+    }
 
-  async onOpen() {
-    this.containerEl.addClass("jupyter-view-container");
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("jupyter-view-container");
-    container.createEl("iframe", {
-        attr: {
-            src: "http://localhost:8888"
+    getDisplayText(): string {
+        return "Jupyter Embedded View";
+    }
+    
+    async onLoadFile(file: TFile) {
+        if (this.plugin.env === null) {
+            new Notice("Jupyter environment is not running");
+            return;
         }
-    }).addClass("jupyter-view-iframe");
-  }
 
-  async onClose() {
-    // Nothing to clean up.
-  }
+        this.containerEl.addClass("jupyter-view-container");
+        const container = this.containerEl.children[1];
+        container.empty();
+        container.addClass("jupyter-view-container");
+        container.createEl("iframe", {
+            attr: {
+                src: `http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`
+            },
+            
+        }).addClass("jupyter-view-iframe");
+    }
 }

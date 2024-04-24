@@ -2,17 +2,17 @@ import { FileSystemAdapter, Notice, Plugin, WorkspaceLeaf } from "obsidian";
 import { spawnJupyterEnv, JupyterEnv, JupyterEnvEvent } from "./jupyter-env";
 // @ts-ignore
 import { shell } from "electron";
-import { ExampleView } from "./jupyter-view";
+import { EmbeddedJupyterView } from "./jupyter-view";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
-	private env: JupyterEnv | null = null;
+	public env: JupyterEnv | null = null;
 
     async onload() {
 		this.addRibbonIcon("monitor-play", "Start Jupyter", this.startJupyter.bind(this));
 		this.registerView(
 			"jupyter-view",
-			(leaf) => new ExampleView(leaf)
+			(leaf) => new EmbeddedJupyterView(leaf, this)
 		);
 		this.registerExtensions(["ipynb"], "jupyter-view");
 	}
