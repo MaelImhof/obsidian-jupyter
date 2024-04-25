@@ -2,10 +2,6 @@ import { FileSystemAdapter, Notice, Plugin } from "obsidian";
 import { spawnJupyterEnv, JupyterEnv, JupyterEnvEvent } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
 
-/*
- * <div class="view-content wb-view-content"><webview allowpopups="" partition="persist:surfing-vault-9279338cfb0894ab" class="wb-frame" src="http://localhost:8889/login?next=%2Ftree%3F"></webview></div>
- */
-
 export default class JupyterNotebookPlugin extends Plugin {
 
 	public env: JupyterEnv | null = null;
@@ -39,26 +35,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			new Notice("Jupyter Notebook is running");
 		}).bind(this));
 	}
-
-	// async activateView() {
-	// 	const { workspace } = this.app;
-	
-	// 	let leaf: WorkspaceLeaf | null = null;
-	// 	const leaves = workspace.getLeavesOfType("jupyter-view");
-	
-	// 	if (leaves.length > 0) {
-	// 	  // A leaf with our view already exists, use that
-	// 	  leaf = leaves[0];
-	// 	} else {
-	// 	  // Our view could not be found in the workspace, create a new leaf
-	// 	  // in the right sidebar for it
-	// 	  leaf = workspace.getRightLeaf(false);
-	// 	  await leaf.setViewState({ type: "jupyter-view", active: true });
-	// 	}
-	
-	// 	// "Reveal" the leaf in case it is in a collapsed sidebar
-	// 	workspace.revealLeaf(leaf);
-	//   }
 
 	async onunload() {
 		// Kill the Jupyter Notebook process

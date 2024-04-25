@@ -4,8 +4,6 @@ import { EventEmitter } from "events";
 
 export function spawnJupyterEnv(path: string): JupyterEnv {
     return new JupyterEnv(
-        // TODO : Add a way to pass the path to the python executable
-        // TODO : Add a way to use Jupyter Lab instead
         spawn("python", ["-m", "notebook", "--no-browser"], {
             cwd: path
         }),
@@ -21,28 +19,11 @@ export enum JupyterEnvEvent {
 
 export class JupyterEnv {
 
-    /**
-     * The URL to use in a browser to access Jupyter. Often http://localhost:8888.
-     */
     private jupyterUrl: string | null = null;
-    /**
-     * The port to use on localhost to access Jupyter. Often 8888.
-     */
     private jupyterPort: number | null = null;
-    /**
-     * The token to use to access Jupyter.
-     */
     private jupyterToken: string | null = null;
-    /**
-     * Events other parts of the code can listen to.
-     * See JupyterEnvEvent for the list of events.
-     */
     private events: EventEmitter = new EventEmitter();
 
-    /**
-     * @param process The process running the Jupyter environment.
-     * @param path The path of the working directory of the Jupyter environment.
-     */
     constructor(
         private process: ChildProcessWithoutNullStreams,
         public readonly path: string,
@@ -51,12 +32,6 @@ export class JupyterEnv {
         this.process.stdout.on("data", this.processOutput.bind(this));
     }
 
-    /**
-     * When Jupyter prints out something, parse it to find the URL
-     * to access the Jupyter environment.
-     * 
-     * @param data The data to process.
-     */
     private processOutput(data: any) {
         data = data.toString();
         console.debug(data);
@@ -73,12 +48,6 @@ export class JupyterEnv {
         }
     }
 
-    /**
-     * Listen to an event of this Jupyter instance.
-     * 
-     * @param event See JupyterEnvEvent for the list of events.
-     * @param callback The function to call when the event occurs.
-     */
     public on(event: JupyterEnvEvent, callback: (data: string) => void) {
         switch (event) {
             case JupyterEnvEvent.PORT:
@@ -116,26 +85,15 @@ export class JupyterEnv {
         return this.jupyterToken;
     }
 
-    /**
-     * Get the URL to access the Jupyter environment. If null,
-     * the Jupyter environment is not ready yet. Use the on method
-     * to listen to the URL event.
-     */
     public getUrl(): string | null {
         return this.jupyterUrl;
     }
 
-    /**
-     * Check if the Jupyter environment is still running.
-     */
     public isAlive(): boolean {
         return !this.process.exitCode === null;
     }
 
-    /**
-     * Kill the Jupyter environment.
-     */
     public kill() {
-        this.process.kill();
+        this.process.kill("SIGINT");
     }
 }
