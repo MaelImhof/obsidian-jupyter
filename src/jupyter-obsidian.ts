@@ -1,8 +1,10 @@
-import { FileSystemAdapter, Notice, Plugin, WorkspaceLeaf } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin } from "obsidian";
 import { spawnJupyterEnv, JupyterEnv, JupyterEnvEvent } from "./jupyter-env";
-// @ts-ignore
-import { shell } from "electron";
 import { EmbeddedJupyterView } from "./jupyter-view";
+
+/*
+ * <div class="view-content wb-view-content"><webview allowpopups="" partition="persist:surfing-vault-9279338cfb0894ab" class="wb-frame" src="http://localhost:8889/login?next=%2Ftree%3F"></webview></div>
+ */
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -10,10 +12,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 
     async onload() {
 		this.addRibbonIcon("monitor-play", "Start Jupyter", this.startJupyter.bind(this));
-		this.registerView(
-			"jupyter-view",
-			(leaf) => new EmbeddedJupyterView(leaf, this)
-		);
+		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
 	}
 
@@ -38,7 +37,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env = spawnJupyterEnv(path);
 		this.env.on(JupyterEnvEvent.URL, ((url: string) => {
 			new Notice("Jupyter Notebook is running");
-			shell.openExternal(url);
 		}).bind(this));
 	}
 

@@ -5,6 +5,8 @@ export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
 export class EmbeddedJupyterView extends FileView {
 
+    private webviewEl: HTMLElement | null = null;
+
     constructor(leaf: WorkspaceLeaf, private plugin: JupyterNotebookPlugin) {
         super(leaf);
     }
@@ -23,15 +25,17 @@ export class EmbeddedJupyterView extends FileView {
             return;
         }
 
-        this.containerEl.addClass("jupyter-view-container");
-        const container = this.containerEl.children[1];
-        container.empty();
-        container.addClass("jupyter-view-container");
-        container.createEl("iframe", {
-            attr: {
-                src: `http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`
-            },
-            
-        }).addClass("jupyter-view-iframe");
+        this.contentEl.empty();
+
+        const doc = this.contentEl.doc;
+        this.webviewEl = doc.createElement("webview");
+        this.webviewEl.setAttribute("allowpopups", "");
+        // @ts-ignore
+        this.webviewEl.setAttribute("partition", "persist:surfing-vault-" + this.app.appId);
+        this.webviewEl.addClass("jupyter-webview");
+        this.webviewEl.setAttribute("src", `http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`);
+        this.contentEl.appendChild(this.webviewEl);
+
+        new Notice(`http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`);
     }
 }
