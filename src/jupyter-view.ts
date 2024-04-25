@@ -34,8 +34,5 @@ export class EmbeddedJupyterView extends FileView {
         this.webviewEl.setAttribute("partition", "persist:surfing-vault-" + this.app.appId);
         this.webviewEl.addClass("jupyter-webview");
         this.webviewEl.setAttribute("src", `http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`);
-        this.contentEl.appendChild(this.webviewEl);
-
-        new Notice(`http://localhost:${this.plugin.env.getPort()}/notebooks/${file.path}/?token=${this.plugin.env.getToken()}`);
     }
 }

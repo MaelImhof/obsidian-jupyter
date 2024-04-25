@@ -1,99 +1,113 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
 
-
-export function spawnJupyterEnv(path: string): JupyterEnv {
-    return new JupyterEnv(
-        spawn("python", ["-m", "notebook", "--no-browser"], {
-            cwd: path
-        }),
-        path
-    );
+export enum JupyterEnvironmentEvent {
+    /**
+     * When the Jupyter child process has been started, but the server is not ready yet.
+     */
+    STARTING = "starting",
+    /**
+     * When the Jupyter environment has started and we know its port number and token.
+     */
+    READY = "ready",
+    /**
+     * When the Jupyter environment has been exited.
+     */
+    EXIT = "exit",
+    /**
+     * When either of READY, STARTING or EXIT happens.
+     */
+    CHANGE = "change"
 }
 
-export enum JupyterEnvEvent {
-    PORT = "port",
-    TOKEN = "token",
-    URL = "url"
+export enum JupyterEnvironmentStatus {
+    STARTING = "starting",
+    RUNNING = "running",
+    EXITED = "exited"
 }
 
-export class JupyterEnv {
-
-    private jupyterUrl: string | null = null;
-    private jupyterPort: number | null = null;
-    private jupyterToken: string | null = null;
+export class JupyterEnvironment {
+    private jupyterProcess: ChildProcessWithoutNullStreams|null = null;
+    private jupyterPort: number|null = null;
+    private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
+    private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
 
-    constructor(
-        private process: ChildProcessWithoutNullStreams,
-        public readonly path: string,
-    ) {
-        this.process.stderr.on("data", this.processOutput.bind(this));
-        this.process.stdout.on("data", this.processOutput.bind(this));
+    constructor(private readonly path: string) { }
+
+    public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
+        this.events.on(event, callback);
     }
 
-    private processOutput(data: any) {
+    public isRunning(): boolean {
+        return this.jupyterProcess !== null && this.jupyterProcess.exitCode === null && this.status === JupyterEnvironmentStatus.RUNNING;
+    }
+
+    public start() {
+        if (this.isRunning()) {
+            return;
+        }
+
+        this.jupyterProcess = spawn("python", ["-m", "notebook", "--no-browser"], {
+            cwd: this.path
+        });
+
+        this.jupyterProcess.stderr.on("data", this.processJupyterOutput.bind(this));
+        this.jupyterProcess.stdout.on("data", this.processJupyterOutput.bind(this));
+
+        this.status = JupyterEnvironmentStatus.STARTING;
+        this.events.emit(JupyterEnvironmentEvent.STARTING, this);
+        this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+    }
+
+    private processJupyterOutput(data: string) {
         data = data.toString();
-        console.debug(data);
-        
+
+        // Parse what Jupyter writes to the console to find the URL and token
         const match = data.match(/http:\/\/localhost:(\d+)\/(?:tree)\?token=(\w+)/);
         if (match) {
+            this.jupyterProcess?.stderr.removeAllListeners();
+            this.jupyterProcess?.stdout.removeAllListeners();
             this.jupyterPort = parseInt(match[1]);
-            this.events.emit(JupyterEnvEvent.PORT, this.jupyterPort.toString());
             this.jupyterToken = match[2];
-            this.events.emit(JupyterEnvEvent.TOKEN, this.jupyterToken);
-            this.jupyterUrl = `http://localhost:${this.jupyterPort}/?token=${this.jupyterToken}`;
-            this.events.emit(JupyterEnvEvent.URL, this.jupyterUrl);
-            console.debug(this.jupyterUrl);
+            this.status = JupyterEnvironmentStatus.RUNNING;
+            this.events.emit(JupyterEnvironmentEvent.READY, this);
+            this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
         }
     }
 
-    public on(event: JupyterEnvEvent, callback: (data: string) => void) {
-        switch (event) {
-            case JupyterEnvEvent.PORT:
-                if (this.jupyterPort !== null) {
-                    callback(this.jupyterPort.toString());
-                }
-                else {
-                    this.events.once(event, callback);
-                }
-                break;
-            case JupyterEnvEvent.TOKEN:
-                if (this.jupyterToken !== null) {
-                    callback(this.jupyterToken);
-                }
-                else {
-                    this.events.once(event, callback);
-                }
-                break;
-            case JupyterEnvEvent.URL:
-                if (this.jupyterUrl !== null) {
-                    callback(this.jupyterUrl);
-                }
-                else {
-                    this.events.once(event, callback);
-                }
-                break;
-        }
+    public getStatus(): JupyterEnvironmentStatus {
+        return this.status;
     }
 
-    public getPort(): number | null {
+    public getPort(): number|null {
         return this.jupyterPort;
     }
 
-    public getToken(): string | null {
+    public getToken(): string|null {
         return this.jupyterToken;
     }
 
-    public getUrl(): string | null {
-        return this.jupyterUrl;
+    /**
+     * @param file The path of the file relative to the Jupyter environment's working directy.
+     */
+    public getFileUrl(file: string): string|null {
+        if (!this.isRunning()) {
+            return null;
+        }
+
+        return `http://localhost:${this.jupyterPort}/notebooks/${file}?token=${this.jupyterToken}`;
     }
 
-    public isAlive(): boolean {
-        return !this.process.exitCode === null;
-    }
-
-    public kill() {
-        this.process.kill("SIGINT");
+    public exit() {
+        if (this.isRunning()) {
+            (this.jupyterProcess as ChildProcessWithoutNullStreams).kill("SIGINT");
+            this.jupyterProcess = null;
+            this.jupyterPort = null;
+            this.jupyterToken = null;
+            this.status = JupyterEnvironmentStatus.EXITED;
+            this.events.emit(JupyterEnvironmentEvent.EXIT, this);
+            this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+        }
     }
 }
