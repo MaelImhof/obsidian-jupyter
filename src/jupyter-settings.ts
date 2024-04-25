@@ -4,9 +4,11 @@ import { JupyterEnvironmentStatus } from "./jupyter-env";
 
 export interface JupyterSettings {
     displayRibbonIcon: boolean;
+    useStatusNotices: boolean;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
-    displayRibbonIcon: true
+    displayRibbonIcon: true,
+    useStatusNotices: true
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -50,6 +52,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.displayRibbonIcon)
                     .onChange((async (value: boolean) => {
                         this.plugin.setRibbonIconSetting(value);
+                    }).bind(this))
+            ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Display status notices")
+            .setDesc("If enabled, short messages will pop up when the Jupyter server is starting, running or exits.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.useStatusNotices)
+                    .onChange((async (value: boolean) => {
+                        this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
     }

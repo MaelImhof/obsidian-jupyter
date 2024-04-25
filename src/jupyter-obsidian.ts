@@ -37,6 +37,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	public async setStatusNoticesSetting(value: boolean) {
+		this.settings.useStatusNotices = value;
+		await this.saveSettings();
+	}
+
 	public async saveSettings() {
 		await this.saveData(this.settings);
 	}
@@ -53,6 +58,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private showStatusMessage() {
+		if (!this.settings.useStatusNotices) {
+			return;
+		}
+		
 		switch (this.env.getStatus()) {
 			case JupyterEnvironmentStatus.STARTING:
 				new Notice("Jupyter Server is starting");
