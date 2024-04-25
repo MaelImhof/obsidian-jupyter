@@ -1,20 +1,44 @@
 import { FileSystemAdapter, Notice, Plugin, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
-import { JupyterSettingsTab } from "./jupyter-settings";
+import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab } from "./jupyter-settings";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
 	public readonly env: JupyterEnvironment = new JupyterEnvironment((this.app.vault.adapter as FileSystemAdapter).getBasePath());
 	private ribbonIcon: HTMLElement|null = null;
+	public settings: JupyterSettings = DEFAULT_SETTINGS;
 
     async onload() {
+		await this.loadSettings();
+		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
+	}
+
+	private async loadSettings() {
+		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	public async setRibbonIconSetting(value: boolean) {
+		this.settings.displayRibbonIcon = value;
+		await this.saveSettings();
+		if (!value) {
+			this.ribbonIcon?.remove();
+			this.ribbonIcon = null;
+		}
+		else {
+			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+			this.updateRibbon(this.env);
+		}
+	}
+
+	public async saveSettings() {
+		await this.saveData(this.settings);
 	}
 
 	private async toggleJupyter() {
@@ -28,20 +52,36 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	private showStatusMessage() {
+		switch (this.env.getStatus()) {
+			case JupyterEnvironmentStatus.STARTING:
+				new Notice("Jupyter Server is starting");
+				break;
+			case JupyterEnvironmentStatus.RUNNING:
+				new Notice("Jupyter Server is now running");
+				break;
+			case JupyterEnvironmentStatus.EXITED:
+				new Notice("Jupyter Server has exited");
+				break;
+		}
+	
+	}
+
 	private async updateRibbon(env: JupyterEnvironment) {
+		if (this.ribbonIcon === null || !this.settings.displayRibbonIcon) {
+			return;
+		}
+
 		switch (env.getStatus()) {
 			case JupyterEnvironmentStatus.STARTING:
-				new Notice("Starting Jupyter Server");
 				setIcon(this.ribbonIcon as HTMLElement, "monitor-dot");
 				setTooltip(this.ribbonIcon as HTMLElement, "Jupyter Server is starting");
 				break;
 			case JupyterEnvironmentStatus.RUNNING:
-				new Notice("Jupyter Server is now running");
 				setIcon(this.ribbonIcon as HTMLElement, "monitor-stop");
 				setTooltip(this.ribbonIcon as HTMLElement, "Stop Jupyter Server");
 				break;
 			case JupyterEnvironmentStatus.EXITED:
-				new Notice("Jupyter Server has exited");
 				setIcon(this.ribbonIcon as HTMLElement, "monitor-play");
 				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
@@ -49,6 +89,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	async onunload() {
+		await this.saveSettings();
 		// Kill the Jupyter Notebook process
 		this.env.exit();
 	}

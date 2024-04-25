@@ -1,8 +1,13 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
+import { JupyterEnvironmentStatus } from "./jupyter-env";
 
-export interface JupyterSettings { };
-export const DEFAULT_SETTINGS: JupyterSettings = { };
+export interface JupyterSettings {
+    displayRibbonIcon: boolean;
+};
+export const DEFAULT_SETTINGS: JupyterSettings = {
+    displayRibbonIcon: true
+};
 
 export class JupyterSettingsTab extends PluginSettingTab {
     constructor(app: App, private plugin: JupyterNotebookPlugin) {
@@ -11,14 +16,41 @@ export class JupyterSettingsTab extends PluginSettingTab {
 
     display() {
         this.containerEl.empty();
-
+        
         new Setting(this.containerEl)
-            .setName("Server Status")
-            .setDesc("Check if the Jupyter server is running")
-            .addToggle((toggle) =>
+            .setName("Server running")
+            .setDesc("Start or stop the Jupyter server.")
+            .addToggle(((toggle: ToggleComponent) =>
                 toggle
                     .setValue(this.plugin.env.isRunning())
-                    .setDisabled(true)
-            );
+                    .onChange(((value: boolean) => {
+                        switch (this.plugin.env.getStatus()) {
+                            case JupyterEnvironmentStatus.STARTING:
+                                toggle.setValue(true);
+                                new Notice("Can't change status while Jupyter server is starting.");
+                                break;
+                            case JupyterEnvironmentStatus.RUNNING:
+                                if (!value) {
+                                    this.plugin.env.exit();
+                                }
+                                break;
+                            case JupyterEnvironmentStatus.EXITED:
+                                if (value) {
+                                    this.plugin.env.start();
+                                }
+                                break;
+                        }
+                    }).bind(this))
+            ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Display ribbon icon")
+            .setDesc("Define whether or not you want this Jupyter plugin to use a ribbon icon.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.displayRibbonIcon)
+                    .onChange((async (value: boolean) => {
+                        this.plugin.setRibbonIconSetting(value);
+                    }).bind(this))
+            ).bind(this));
     }
 }
