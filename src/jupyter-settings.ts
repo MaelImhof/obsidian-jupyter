@@ -73,7 +73,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
             .setDesc("If a .ipynb file is opened, a Jupyter server will be started automatically if needed.")
             .addToggle(((toggle: ToggleComponent) => {
                 toggle
-                    .setValue(this.plugin.settings.debugConsole)
+                    .setValue(this.plugin.settings.startJupyterAuto)
                     .onChange((async (value: boolean) => {
                         this.plugin.setStartJupyterAuto(value);
                     }).bind(this))
