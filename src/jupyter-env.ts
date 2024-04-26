@@ -33,7 +33,7 @@ export class JupyterEnvironment {
     private events: EventEmitter = new EventEmitter();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
 
-    constructor(private readonly path: string) { }
+    constructor(private readonly path: string, private printDebug: boolean) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -62,18 +62,26 @@ export class JupyterEnvironment {
 
     private processJupyterOutput(data: string) {
         data = data.toString();
-
-        // Parse what Jupyter writes to the console to find the URL and token
-        const match = data.match(/http:\/\/localhost:(\d+)\/(?:tree)\?token=(\w+)/);
-        if (match) {
-            this.jupyterProcess?.stderr.removeAllListeners();
-            this.jupyterProcess?.stdout.removeAllListeners();
-            this.jupyterPort = parseInt(match[1]);
-            this.jupyterToken = match[2];
-            this.status = JupyterEnvironmentStatus.RUNNING;
-            this.events.emit(JupyterEnvironmentEvent.READY, this);
-            this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+        if (this.printDebug) {
+            console.debug(data.toString());
         }
+
+        // If not found yet, parse what Jupyter writes to the console to find
+        // the port and the token to authenticate with.
+        if (this.status == JupyterEnvironmentStatus.STARTING) {
+            const match = data.match(/http:\/\/localhost:(\d+)\/(?:tree)\?token=(\w+)/);
+            if (match) {
+                this.jupyterPort = parseInt(match[1]);
+                this.jupyterToken = match[2];
+                this.status = JupyterEnvironmentStatus.RUNNING;
+                this.events.emit(JupyterEnvironmentEvent.READY, this);
+                this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+            }
+        }
+    }
+
+    public printDebugMessages(value: boolean) {
+        this.printDebug = value;
     }
 
     public getStatus(): JupyterEnvironmentStatus {

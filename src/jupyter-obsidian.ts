@@ -5,9 +5,9 @@ import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab } from "./jupyter
 
 export default class JupyterNotebookPlugin extends Plugin {
 
-	public readonly env: JupyterEnvironment = new JupyterEnvironment((this.app.vault.adapter as FileSystemAdapter).getBasePath());
-	private ribbonIcon: HTMLElement|null = null;
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
+	public readonly env: JupyterEnvironment = new JupyterEnvironment((this.app.vault.adapter as FileSystemAdapter).getBasePath(), this.settings.debugConsole);
+	private ribbonIcon: HTMLElement|null = null;
 
     async onload() {
 		await this.loadSettings();
@@ -40,6 +40,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public async setStatusNoticesSetting(value: boolean) {
 		this.settings.useStatusNotices = value;
 		await this.saveSettings();
+	}
+
+	public async setDebugConsole(value: boolean) {
+		this.settings.debugConsole = value;
+		await this.saveSettings();
+		this.env.printDebugMessages(this.settings.debugConsole);
 	}
 
 	public async saveSettings() {

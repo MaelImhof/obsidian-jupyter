@@ -5,10 +5,12 @@ import { JupyterEnvironmentStatus } from "./jupyter-env";
 export interface JupyterSettings {
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
+    debugConsole: boolean;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
-    useStatusNotices: true
+    useStatusNotices: true,
+    debugConsole: false
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -64,5 +66,15 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Print Jupyter output to Obsidian console.")
+            .setDesc("When you start Jupyter through a terminal, it prints a bunch of messages. You can get those messages in the Obsidian console by enabling this setting and opening the console (see key binds on the Obsidian website). This can help you if your Jupyter server does not start for some reason.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.debugConsole)
+                    .onChange((async (value: boolean) => {
+                        this.plugin.setDebugConsole(value);
+                    }).bind(this))
+            }).bind(this));
     }
 }
