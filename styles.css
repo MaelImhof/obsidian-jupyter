@@ -7,10 +7,24 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+.jupyter-message-container {
+	height: 100%;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+}
+
 .jupyter-webview {
 	width: 100%;
 	height: 100%;
 	border: none;
 	background-color: white;
 	background-clip: content-box;
+}
+
+.jupyter-webview-loading {
+	display: none;
 }

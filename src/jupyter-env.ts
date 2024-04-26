@@ -39,12 +39,16 @@ export class JupyterEnvironment {
         this.events.on(event, callback);
     }
 
+    public once(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
+        this.events.once(event, callback);
+    }
+
     public isRunning(): boolean {
         return this.jupyterProcess !== null && this.jupyterProcess.exitCode === null && this.status === JupyterEnvironmentStatus.RUNNING;
     }
 
     public start() {
-        if (this.isRunning()) {
+        if (this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
             return;
         }
 
