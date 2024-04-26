@@ -42,6 +42,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
+	public async setStartJupyterAuto(value: boolean) {
+		this.settings.startJupyterAuto = value;
+		await this.saveSettings();
+	}
+
 	public async setDebugConsole(value: boolean) {
 		this.settings.debugConsole = value;
 		await this.saveSettings();

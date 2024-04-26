@@ -6,11 +6,13 @@ export interface JupyterSettings {
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
     debugConsole: boolean;
+    startJupyterAuto: boolean;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
     useStatusNotices: true,
-    debugConsole: false
+    debugConsole: false,
+    startJupyterAuto: true
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -66,6 +68,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Start Jupyter automatically")
+            .setDesc("If a .ipynb file is opened, a Jupyter server will be started automatically if needed.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.debugConsole)
+                    .onChange((async (value: boolean) => {
+                        this.plugin.setStartJupyterAuto(value);
+                    }).bind(this))
+            }).bind(this));
         new Setting(this.containerEl)
             .setName("Print Jupyter output to Obsidian console.")
             .setDesc("When you start Jupyter through a terminal, it prints a bunch of messages. You can get those messages in the Obsidian console by enabling this setting and opening the console (see key binds on the Obsidian website). This can help you if your Jupyter server does not start for some reason.")
