@@ -39,6 +39,10 @@ export class JupyterEnvironment {
         this.events.on(event, callback);
     }
 
+    public off(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
+        this.events.off(event, callback);
+    }
+
     public once(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.once(event, callback);
     }

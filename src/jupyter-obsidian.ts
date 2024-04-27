@@ -24,6 +24,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
 	}
 
+	async onExternalSettingsChange() {
+		await this.loadSettings();
+	}
+
 	public async setRibbonIconSetting(value: boolean) {
 		this.settings.displayRibbonIcon = value;
 		await this.saveSettings();
@@ -44,6 +48,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	public async setStartJupyterAuto(value: boolean) {
 		this.settings.startJupyterAuto = value;
+		await this.saveSettings();
+	}
+
+	public async setCloseFilesWithServer(value: boolean) {
+		this.settings.closeFilesWithServer = value;
 		await this.saveSettings();
 	}
 

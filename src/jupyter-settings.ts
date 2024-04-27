@@ -7,12 +7,14 @@ export interface JupyterSettings {
     useStatusNotices: boolean;
     debugConsole: boolean;
     startJupyterAuto: boolean;
+    closeFilesWithServer: boolean;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
     useStatusNotices: true,
     debugConsole: false,
-    startJupyterAuto: true
+    startJupyterAuto: true,
+    closeFilesWithServer: true
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -76,6 +78,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.startJupyterAuto)
                     .onChange((async (value: boolean) => {
                         this.plugin.setStartJupyterAuto(value);
+                    }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Close files with server")
+            .setDesc("If enabled, any opened .ipynb file will be closed when the Jupyter server exits.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.closeFilesWithServer)
+                    .onChange((async (value: boolean) => {
+                        this.plugin.setCloseFilesWithServer(value);
                     }).bind(this))
             }).bind(this));
         new Setting(this.containerEl)

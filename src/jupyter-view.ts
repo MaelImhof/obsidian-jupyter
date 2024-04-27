@@ -6,6 +6,9 @@ export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
 export class EmbeddedJupyterView extends FileView {
 
+    private readonly runningEventListener = this.onJupyterRunning.bind(this);
+    private readonly exitEventListener = this.onJupyterExits.bind(this);
+
     private openedFile: TFile | null = null;
 
     private messageContainerEl: HTMLElement | null = null;
@@ -13,7 +16,7 @@ export class EmbeddedJupyterView extends FileView {
     private messageTextEl: HTMLElement | null = null;
     private webviewEl: HTMLElement | null = null;
 
-    constructor(leaf: WorkspaceLeaf, private plugin: JupyterNotebookPlugin) {
+    constructor(leaf: WorkspaceLeaf, private readonly plugin: JupyterNotebookPlugin) {
         super(leaf);
     }
 
@@ -57,29 +60,32 @@ export class EmbeddedJupyterView extends FileView {
                 this.plugin.env.start();
                 // Keep going to the STARTING instructions
             case JupyterEnvironmentStatus.STARTING:
-                this.plugin.env.once(JupyterEnvironmentEvent.READY, (async (_env: JupyterEnvironment) => await this.onJupyterRunning(file)).bind(this));
                 this.displayMessage("Jupyter is starting", "The Jupyter server is not ready yet. Your document will be opened shortly.");
                 break;
             case JupyterEnvironmentStatus.RUNNING:
-                await this.onJupyterRunning(file);
+                await this.onJupyterRunning(this.plugin.env);
                 break;
             default:
-                this.displayMessage("Unknown error", "An unknown error has happened when loading the file. Please try re-opening it.");
+                this.displayMessage("Unknown error", "An unknown error has happened when loading the file. Please try closing and re-opening it.");
                 break;
         }
     }
 
-    async onJupyterRunning(file: TFile) {
+    async onJupyterRunning(env: JupyterEnvironment) {
+        if (this.openedFile === null) {
+            this.displayMessage("No opened file", "Click on a file in the explorer view to open it here.");
+            return;
+        }
+
         // Check the Jupyter environment is indeed running
-        if (!this.plugin.env?.isRunning()) {
-            this.displayMessage("Unknown error", "An unknown error has happened when loading the page. Please try re-opening it.");
-            console.debug("Exiting onJupyterRunning because Jupyter is not running.");
+        if (!env.isRunning()) {
+            this.displayMessage("Unknown error", "An unknown error has happened when loading the page. Please try closing and re-opening it.");
             return;
         }
 
         this.contentEl.empty();
 
-        this.displayMessage("Loading " + file.name, "Your file will be displayed shortly.");
+        this.displayMessage("Loading " + this.openedFile.name, "Your file will be displayed shortly.");
         
         // @ts-ignore
         this.webviewEl = this.contentEl.createEl("webview");
@@ -87,7 +93,7 @@ export class EmbeddedJupyterView extends FileView {
         // @ts-ignore
         this.webviewEl.setAttribute("partition", "persist:surfing-vault-" + this.app.appId);
         this.webviewEl.addClass("jupyter-webview", "jupyter-webview-loading");
-        this.webviewEl.setAttribute("src", this.plugin.env.getFileUrl(file.path) as string);
+        this.webviewEl.setAttribute("src", env.getFileUrl(this.openedFile.path) as string);
         this.webviewEl.addEventListener("dom-ready", ((_event: any) => {
             this.messageContainerEl?.remove();
             this.messageContainerEl = null;
@@ -97,5 +103,27 @@ export class EmbeddedJupyterView extends FileView {
             this.messageTextEl = null;
             this.webviewEl?.removeClass("jupyter-webview-loading");
         }).bind(this));
+    }
+
+    async onJupyterExits() {
+        if (this.plugin.settings.closeFilesWithServer) {
+            this.displayMessage("Jupyter server exited", "The Jupyter server has exited. Please restart the server to view the file.");
+        }
+    }
+
+    protected async onOpen() {
+        this.plugin.env.on(JupyterEnvironmentEvent.READY, this.runningEventListener);
+        this.plugin.env.on(JupyterEnvironmentEvent.EXIT, this.exitEventListener);
+    }
+
+    protected async onClose() {
+        this.openedFile = null;
+        this.messageContainerEl = null;
+        this.messageHeaderEl = null;
+        this.messageTextEl = null;
+        this.webviewEl = null;
+
+        this.plugin.env.off(JupyterEnvironmentEvent.READY, this.runningEventListener);
+        this.plugin.env.off(JupyterEnvironmentEvent.EXIT, this.exitEventListener);
     }
 }
