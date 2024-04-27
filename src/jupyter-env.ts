@@ -33,6 +33,8 @@ export class JupyterEnvironment {
     private events: EventEmitter = new EventEmitter();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
 
+    private jupyterExitListener: (code: number|null, signal: NodeJS.Signals|null) => void = this.onJupyterExit.bind(this);
+
     constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
@@ -56,12 +58,23 @@ export class JupyterEnvironment {
             return;
         }
 
-        this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "notebook", "--no-browser"], {
-            cwd: this.path
-        });
+        try {
+            this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "wkosfkoied", "--no-browser"], {
+                cwd: this.path
+            });
+        }
+        catch (e) {
+            // TODO: Proper feedback instead of just console
+            console.error(e);
+            return;
+        }
 
         this.jupyterProcess.stderr.on("data", this.processJupyterOutput.bind(this));
         this.jupyterProcess.stdout.on("data", this.processJupyterOutput.bind(this));
+        this.jupyterProcess.on("exit", this.jupyterExitListener);
+        this.jupyterProcess.on("error", this.jupyterExitListener);
+
+        // TODO: Impose a timeout on the starting status to avoid staying "starting" forever.
 
         this.status = JupyterEnvironmentStatus.STARTING;
         this.events.emit(JupyterEnvironmentEvent.STARTING, this);
@@ -120,14 +133,26 @@ export class JupyterEnvironment {
     }
 
     public exit() {
-        if (this.isRunning()) {
-            (this.jupyterProcess as ChildProcessWithoutNullStreams).kill("SIGINT");
-            this.jupyterProcess = null;
-            this.jupyterPort = null;
-            this.jupyterToken = null;
-            this.status = JupyterEnvironmentStatus.EXITED;
-            this.events.emit(JupyterEnvironmentEvent.EXIT, this);
-            this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+        if (this.getStatus() !== JupyterEnvironmentStatus.EXITED && this.jupyterProcess !== null) {
+            this.jupyterProcess.kill("SIGINT");
         }
+    }
+
+    private onJupyterExit(_code: number|null, _signal: NodeJS.Signals|null) {
+        if (this.jupyterProcess === null) {
+            return;
+        }
+
+        if (this.jupyterProcess.exitCode !== null && this.jupyterProcess.exitCode !== 0) {
+            // TODO: Proper feedback instead of just console
+            console.error("Jupyter exited with code " + this.jupyterProcess.exitCode);
+        }
+
+        this.jupyterProcess = null;
+        this.jupyterPort = null;
+        this.jupyterToken = null;
+        this.status = JupyterEnvironmentStatus.EXITED;
+        this.events.emit(JupyterEnvironmentEvent.EXIT, this);
+        this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
     }
 }
