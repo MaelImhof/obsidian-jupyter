@@ -1,12 +1,16 @@
 import { FileSystemAdapter, Notice, Plugin, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
-import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab } from "./jupyter-settings";
+import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
-	public readonly env: JupyterEnvironment = new JupyterEnvironment((this.app.vault.adapter as FileSystemAdapter).getBasePath(), this.settings.debugConsole);
+	public readonly env: JupyterEnvironment = new JupyterEnvironment(
+		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
+		this.settings.debugConsole,
+		this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath
+	);
 	private ribbonIcon: HTMLElement|null = null;
 
     async onload() {
@@ -22,10 +26,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	private async loadSettings() {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async onExternalSettingsChange() {
-		await this.loadSettings();
 	}
 
 	public async setRibbonIconSetting(value: boolean) {
@@ -54,6 +54,27 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public async setCloseFilesWithServer(value: boolean) {
 		this.settings.closeFilesWithServer = value;
 		await this.saveSettings();
+	}
+
+	public async setPythonExecutable(value: PythonExecutableType) {
+		this.settings.pythonExecutable = value;
+		await this.saveSettings();
+		switch (value) {
+			case PythonExecutableType.PYTHON:
+				this.env.setPythonExecutable("python");
+				break;
+			case PythonExecutableType.PATH:
+				this.env.setPythonExecutable(this.settings.pythonExecutablePath);
+				break;
+		}
+	}
+
+	public async setPythonExecutablePath(value: string) {
+		this.settings.pythonExecutablePath = value;
+		await this.saveSettings();
+		if (this.settings.pythonExecutable === PythonExecutableType.PATH) {
+			this.env.setPythonExecutable(value);
+		}
 	}
 
 	public async setDebugConsole(value: boolean) {

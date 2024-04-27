@@ -33,7 +33,7 @@ export class JupyterEnvironment {
     private events: EventEmitter = new EventEmitter();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
 
-    constructor(private readonly path: string, private printDebug: boolean) { }
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -56,7 +56,7 @@ export class JupyterEnvironment {
             return;
         }
 
-        this.jupyterProcess = spawn("python", ["-m", "notebook", "--no-browser"], {
+        this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "notebook", "--no-browser"], {
             cwd: this.path
         });
 
@@ -86,6 +86,10 @@ export class JupyterEnvironment {
                 this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
             }
         }
+    }
+
+    public setPythonExecutable(value: string) {
+        this.pythonExecutable = value;
     }
 
     public printDebugMessages(value: boolean) {

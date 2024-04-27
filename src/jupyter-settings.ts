@@ -1,6 +1,11 @@
-import { App, Notice, PluginSettingTab, Setting, ToggleComponent } from "obsidian";
+import { App, DropdownComponent, Notice, PluginSettingTab, Setting, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus } from "./jupyter-env";
+
+export enum PythonExecutableType {
+    PYTHON = "python",
+    PATH = "path"
+}
 
 export interface JupyterSettings {
     displayRibbonIcon: boolean;
@@ -8,13 +13,17 @@ export interface JupyterSettings {
     debugConsole: boolean;
     startJupyterAuto: boolean;
     closeFilesWithServer: boolean;
+    pythonExecutablePath: string,
+    pythonExecutable: PythonExecutableType
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
     useStatusNotices: true,
     debugConsole: false,
     startJupyterAuto: true,
-    closeFilesWithServer: true
+    closeFilesWithServer: true,
+    pythonExecutablePath: "",
+    pythonExecutable: PythonExecutableType.PYTHON
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -57,7 +66,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.displayRibbonIcon)
                     .onChange((async (value: boolean) => {
-                        this.plugin.setRibbonIconSetting(value);
+                        await this.plugin.setRibbonIconSetting(value);
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)
@@ -67,7 +76,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.useStatusNotices)
                     .onChange((async (value: boolean) => {
-                        this.plugin.setStatusNoticesSetting(value);
+                        await this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)
@@ -77,7 +86,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.startJupyterAuto)
                     .onChange((async (value: boolean) => {
-                        this.plugin.setStartJupyterAuto(value);
+                        await this.plugin.setStartJupyterAuto(value);
                     }).bind(this))
             }).bind(this));
         new Setting(this.containerEl)
@@ -87,8 +96,31 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.closeFilesWithServer)
                     .onChange((async (value: boolean) => {
-                        this.plugin.setCloseFilesWithServer(value);
+                        await this.plugin.setCloseFilesWithServer(value);
                     }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Python executable to use")
+            .setDesc("Choose whether to simply use the `python` command or a specific path. Note that you will need to restart your Jupyter server if it is running before this setting is applied.")
+            .addDropdown(((dropdown: DropdownComponent) => {
+                dropdown
+                    .addOption(PythonExecutableType.PYTHON, "`python` command")
+                    .addOption(PythonExecutableType.PATH, "Specified executable path")
+                    .setValue(this.plugin.settings.pythonExecutable)
+                    .onChange((async (value: PythonExecutableType) => {
+                        await this.plugin.setPythonExecutable(value);
+                    }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Python executable path")
+            .setDesc("The path to the Python executable to use. This setting is only used if the previous setting is set to `Specified executable path`.")
+            .addText(((text: TextComponent) => {
+                text
+                    .setPlaceholder("Path to Python executable")
+                    .setValue(this.plugin.settings.pythonExecutablePath)
+                    .onChange((async (value: string) => {
+                        await this.plugin.setPythonExecutablePath(value);
+                    }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)
             .setName("Print Jupyter output to Obsidian console.")
@@ -97,7 +129,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.debugConsole)
                     .onChange((async (value: boolean) => {
-                        this.plugin.setDebugConsole(value);
+                        await this.plugin.setDebugConsole(value);
                     }).bind(this))
             }).bind(this));
     }
