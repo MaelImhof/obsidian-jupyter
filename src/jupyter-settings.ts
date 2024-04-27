@@ -39,7 +39,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
             .setDesc("Start or stop the Jupyter server.")
             .addToggle(((toggle: ToggleComponent) =>
                 toggle
-                    .setValue(this.plugin.env.isRunning())
+                    .setValue(this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED)
                     .onChange(((value: boolean) => {
                         switch (this.plugin.env.getStatus()) {
                             case JupyterEnvironmentStatus.STARTING:
