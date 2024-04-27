@@ -6,6 +6,8 @@ export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
 export class EmbeddedJupyterView extends FileView {
 
+    private openedFile: TFile | null = null;
+
     private messageContainerEl: HTMLElement | null = null;
     private messageHeaderEl: HTMLElement | null = null;
     private messageTextEl: HTMLElement | null = null;
@@ -20,7 +22,7 @@ export class EmbeddedJupyterView extends FileView {
     }
 
     getDisplayText(): string {
-        return "Jupyter Embedded View";
+        return this.openedFile?.name ?? "New Jupyter tab";
     }
 
     private displayMessage(header: string, text: string, clear: boolean = true): void {
@@ -38,6 +40,8 @@ export class EmbeddedJupyterView extends FileView {
     }
     
     async onLoadFile(file: TFile) {
+
+        this.openedFile = file;
 
         // If the Jupyter environment is not running, we need to start it first
         switch (this.plugin.env.getStatus()) {
