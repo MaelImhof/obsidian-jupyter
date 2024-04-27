@@ -28,6 +28,10 @@ export class EmbeddedJupyterView extends FileView {
         return this.openedFile?.name ?? "New Jupyter tab";
     }
 
+    getIcon(): string {
+        return "none";
+    }
+
     private displayMessage(header: string, text: string, clear: boolean = true): void {
         if (clear) {
             this.contentEl.empty();
