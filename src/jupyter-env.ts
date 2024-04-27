@@ -17,13 +17,24 @@ export enum JupyterEnvironmentEvent {
     /**
      * When either of READY, STARTING or EXIT happens.
      */
-    CHANGE = "change"
+    CHANGE = "change",
+    /**
+     * When an error occurs. Often called on top of EXIT because the server exits
+     * when an error is thrown, however EXIT does not provide the reason of the server stopping.
+     */
+    ERROR = "error"
 }
 
 export enum JupyterEnvironmentStatus {
     STARTING = "starting",
     RUNNING = "running",
     EXITED = "exited"
+}
+
+export enum JupyterEnvironmentError {
+    NONE = "No error was encountered.",
+    UNABLE_TO_START_JUPYTER = "Jupyter process could not be spawned.",
+    JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed."
 }
 
 export class JupyterEnvironment {
@@ -59,13 +70,13 @@ export class JupyterEnvironment {
         }
 
         try {
-            this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "wkosfkoied", "--no-browser"], {
+            this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "notebook", "--no-browser"], {
                 cwd: this.path
             });
         }
         catch (e) {
-            // TODO: Proper feedback instead of just console
-            console.error(e);
+            this.jupyterProcess = null;
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.UNABLE_TO_START_JUPYTER);
             return;
         }
 
@@ -144,8 +155,7 @@ export class JupyterEnvironment {
         }
 
         if (this.jupyterProcess.exitCode !== null && this.jupyterProcess.exitCode !== 0) {
-            // TODO: Proper feedback instead of just console
-            console.error("Jupyter exited with code " + this.jupyterProcess.exitCode);
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR);
         }
 
         this.jupyterProcess = null;

@@ -1,7 +1,8 @@
 import { FileSystemAdapter, Notice, Plugin, setIcon, setTooltip } from "obsidian";
-import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
+import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
+import { JupyterModal } from "./jupyter-modal";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -15,8 +16,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 
     async onload() {
 		await this.loadSettings();
+		this.env.printDebugMessages(this.settings.debugConsole);
+		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
+		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
 		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
@@ -115,6 +119,25 @@ export default class JupyterNotebookPlugin extends Plugin {
 				break;
 		}
 	
+	}
+
+	private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError) {
+		new JupyterModal(
+			this.app,
+			"Jupyter Error",
+			[
+				"An error occurred while trying to start the Jupyter server.",
+				"Potential causes could be an invalid Python executable configured in the settings or Jupyter not being installed in the corresponding Python environment.",
+				"Use the button below to open the Jupyter plugin's troubleshooting guide.",
+				"Error code: " + error
+			],
+			[
+				{
+					text: "Open troubleshooting guide",
+					onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
+					closeOnClick: false
+				}
+			]).open();
 	}
 
 	private async updateRibbon(env: JupyterEnvironment) {
