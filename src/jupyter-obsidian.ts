@@ -9,8 +9,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
 	public readonly env: JupyterEnvironment = new JupyterEnvironment(
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
-		this.settings.debugConsole,
-		this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath
+		DEFAULT_SETTINGS.debugConsole,
+		DEFAULT_SETTINGS.pythonExecutable === PythonExecutableType.PYTHON ? "python" : DEFAULT_SETTINGS.pythonExecutablePath,
+		DEFAULT_SETTINGS.jupyterTimeoutMs
 	);
 	private ribbonIcon: HTMLElement|null = null;
 
@@ -18,6 +19,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.loadSettings();
 		this.env.printDebugMessages(this.settings.debugConsole);
 		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
+		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
@@ -81,6 +83,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	public async setJupyterTimeoutMs(value: number) {
+		this.settings.jupyterTimeoutMs = value;
+		await this.saveSettings();
+		this.env.setJupyterTimeoutMs(value);
+	}
+
 	public async setDebugConsole(value: boolean) {
 		this.settings.debugConsole = value;
 		await this.saveSettings();
@@ -122,22 +130,44 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError) {
-		new JupyterModal(
-			this.app,
-			"Jupyter Error",
-			[
-				"An error occurred while trying to start the Jupyter server.",
-				"Potential causes could be an invalid Python executable configured in the settings or Jupyter not being installed in the corresponding Python environment.",
-				"Use the button below to open the Jupyter plugin's troubleshooting guide.",
-				"Error code: " + error
-			],
-			[
-				{
-					text: "Open troubleshooting guide",
-					onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
-					closeOnClick: false
-				}
-			]).open();
+		if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
+			new JupyterModal(
+				this.app,
+				"Jupyter Timeout",
+				[
+					"The Jupyter server took too long to start.",
+					"You can set in the settings the maximum time the plugin will wait for the server to start.",
+					"Your current timeout is set to " + (this.settings.jupyterTimeoutMs / 1000) + " second(s).",
+					this.settings.jupyterTimeoutMs < 15000 ? "This is a very short timeout and might not be enough for the server to start. Please try increasing it and see if the error disappears." : "This timeout seems reasonable, hence the problem might be elsewhere depending on your specific situation."
+				],
+				[
+					{
+						text: "Open troubleshooting guide",
+						onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
+						closeOnClick: false
+					}
+				]
+			).open();
+		}
+		else {
+			new JupyterModal(
+				this.app,
+				"Jupyter Error",
+				[
+					"An error occurred while trying to start the Jupyter server.",
+					"Potential causes could be an invalid Python executable configured in the settings or Jupyter not being installed in the corresponding Python environment.",
+					"Use the button below to open the Jupyter plugin's troubleshooting guide.",
+					"Error code: " + error
+				],
+				[
+					{
+						text: "Open troubleshooting guide",
+						onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
+						closeOnClick: false
+					}
+				]
+			).open();
+		}
 	}
 
 	private async updateRibbon(env: JupyterEnvironment) {

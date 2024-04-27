@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Notice, PluginSettingTab, Setting, TextComponent, ToggleComponent } from "obsidian";
+import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus } from "./jupyter-env";
 
@@ -14,7 +14,8 @@ export interface JupyterSettings {
     startJupyterAuto: boolean;
     closeFilesWithServer: boolean;
     pythonExecutablePath: string,
-    pythonExecutable: PythonExecutableType
+    pythonExecutable: PythonExecutableType,
+    jupyterTimeoutMs: number
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
@@ -23,7 +24,8 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     startJupyterAuto: true,
     closeFilesWithServer: true,
     pythonExecutablePath: "",
-    pythonExecutable: PythonExecutableType.PYTHON
+    pythonExecutable: PythonExecutableType.PYTHON,
+    jupyterTimeoutMs: 30000
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -120,6 +122,18 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.pythonExecutablePath)
                     .onChange((async (value: string) => {
                         await this.plugin.setPythonExecutablePath(value);
+                    }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Jupyter starting timeout")
+            .setDesc("To avoid Jupyter being stuck in the starting phase, a timeout is set by default. You can set how many seconds to wait before killing the Jupyter server. Set to 0 to disable the timeout. Please note that a timeout too small might prevent Jupyter from ever starting.")
+            .addSlider(((slider: SliderComponent) => {
+                slider
+                    .setLimits(0, 60, 1)
+                    .setValue(this.plugin.settings.jupyterTimeoutMs / 1000)
+                    .setDynamicTooltip()
+                    .onChange((async (value: number) => {
+                        await this.plugin.setJupyterTimeoutMs(value * 1000);
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)

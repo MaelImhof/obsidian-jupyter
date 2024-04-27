@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
+import { Debouncer, debounce } from "obsidian";
 
 export enum JupyterEnvironmentEvent {
     /**
@@ -34,7 +35,8 @@ export enum JupyterEnvironmentStatus {
 export enum JupyterEnvironmentError {
     NONE = "No error was encountered.",
     UNABLE_TO_START_JUPYTER = "Jupyter process could not be spawned.",
-    JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed."
+    JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed.",
+    JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
 export class JupyterEnvironment {
@@ -46,7 +48,10 @@ export class JupyterEnvironment {
 
     private jupyterExitListener: (code: number|null, signal: NodeJS.Signals|null) => void = this.onJupyterExit.bind(this);
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string) { }
+    private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
+    private jupyerTimedOut: boolean = false;
+
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -85,11 +90,20 @@ export class JupyterEnvironment {
         this.jupyterProcess.on("exit", this.jupyterExitListener);
         this.jupyterProcess.on("error", this.jupyterExitListener);
 
-        // TODO: Impose a timeout on the starting status to avoid staying "starting" forever.
+        if (this.jupyterTimeoutMs > 0) {
+            this.jupyterTimoutListener();
+        }
 
         this.status = JupyterEnvironmentStatus.STARTING;
         this.events.emit(JupyterEnvironmentEvent.STARTING, this);
         this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+    }
+
+    private onJupyterTimeout() {
+        if (this.status == JupyterEnvironmentStatus.STARTING) {
+            this.jupyerTimedOut = true;
+            this.exit();
+        }
     }
 
     private processJupyterOutput(data: string) {
@@ -103,6 +117,7 @@ export class JupyterEnvironment {
         if (this.status == JupyterEnvironmentStatus.STARTING) {
             const match = data.match(/http:\/\/localhost:(\d+)\/(?:tree)\?token=(\w+)/);
             if (match) {
+                this.jupyterTimoutListener.cancel();
                 this.jupyterPort = parseInt(match[1]);
                 this.jupyterToken = match[2];
                 this.status = JupyterEnvironmentStatus.RUNNING;
@@ -118,6 +133,19 @@ export class JupyterEnvironment {
 
     public printDebugMessages(value: boolean) {
         this.printDebug = value;
+    }
+
+    public setJupyterTimeoutMs(value: number) {
+        if (value >= 0) { 
+            this.jupyterTimeoutMs = value;
+            if (value > 0) {
+                this.jupyterTimoutListener = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
+            }
+        }
+    }
+
+    public getJupyterTimeoutMs(): number {
+        return this.jupyterTimeoutMs;
     }
 
     public getStatus(): JupyterEnvironmentStatus {
@@ -156,6 +184,10 @@ export class JupyterEnvironment {
 
         if (this.jupyterProcess.exitCode !== null && this.jupyterProcess.exitCode !== 0) {
             this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR);
+        }
+        else if (this.jupyerTimedOut) {
+            this.jupyerTimedOut = false;
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT);
         }
 
         this.jupyterProcess = null;
