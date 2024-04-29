@@ -16,7 +16,17 @@ main.js
 *.map
 
 # obsidian
+app.json
+appearance.json
+core-plugins.json
+core-plugins-migration.json
+workspace.json
 data.json
+./styles.css
+./manifest.json
+./versions.json
+!test-obsidian-vault/.obsidian/plugins/hot-reload/main.js
+.ipynb_checkpoints
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store

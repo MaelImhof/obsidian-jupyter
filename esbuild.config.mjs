@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import { promises as fs } from "fs";
 
 const banner =
 `/*
@@ -9,6 +10,7 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
+const test_dir = "test-obsidian-vault/.obsidian/plugins/jupyter";
 const prod = (process.argv[2] === "production");
 
 const context = await esbuild.context({
@@ -37,11 +39,15 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: `${test_dir}/main.js`,
 });
 
 if (prod) {
 	await context.rebuild();
+	await fs.copyFile(`${test_dir}/main.js`, "main.js");
+	await fs.copyFile(`${test_dir}/manifest.json`, "manifest.json");
+	await fs.copyFile(`${test_dir}/styles.css`, "styles.css");
+	await fs.copyFile(`${test_dir}/versions.json`, "versions.json");
 	process.exit(0);
 } else {
 	await context.watch();
