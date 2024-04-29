@@ -37,6 +37,36 @@ export class JupyterSettingsTab extends PluginSettingTab {
         this.containerEl.empty();
         
         new Setting(this.containerEl)
+            .setName("Python")
+            .setHeading();
+        new Setting(this.containerEl)
+            .setName("Python executable to use")
+            .setDesc("Choose whether to simply use the `python` command or a specific path. Note that you will need to restart your Jupyter server if it is running before this setting is applied.")
+            .addDropdown(((dropdown: DropdownComponent) => {
+                dropdown
+                    .addOption(PythonExecutableType.PYTHON, "`python` command")
+                    .addOption(PythonExecutableType.PATH, "Specified executable path")
+                    .setValue(this.plugin.settings.pythonExecutable)
+                    .onChange((async (value: PythonExecutableType) => {
+                        await this.plugin.setPythonExecutable(value);
+                    }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Python executable path")
+            .setDesc("The path to the Python executable to use. This setting is only used if the previous setting is set to `Specified executable path`.")
+            .addText(((text: TextComponent) => {
+                text
+                    .setPlaceholder("Path to Python executable")
+                    .setValue(this.plugin.settings.pythonExecutablePath)
+                    .onChange((async (value: string) => {
+                        await this.plugin.setPythonExecutablePath(value);
+                    }).bind(this));
+            }).bind(this));
+
+        new Setting(this.containerEl)
+            .setName("Jupyter")
+            .setHeading();
+        new Setting(this.containerEl)
             .setName("Server running")
             .setDesc("Start or stop the Jupyter server.")
             .addToggle(((toggle: ToggleComponent) =>
@@ -62,6 +92,32 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)
+            .setName("Start Jupyter automatically")
+            .setDesc("If a .ipynb file is opened, a Jupyter server will be started automatically if needed.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.startJupyterAuto)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setStartJupyterAuto(value);
+                    }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Jupyter environment type")
+            .setDesc("Select whether to start Jupyter Notebook or Jupyter Lab.")
+            .addDropdown(((dropdown: DropdownComponent) => {
+                dropdown
+                    .addOption(JupyterEnvironmentType.LAB, "Jupyter Lab")
+                    .addOption(JupyterEnvironmentType.NOTEBOOK, "Jupyter Notebook")
+                    .setValue(this.plugin.settings.jupyterEnvType)
+                    .onChange((async (value: JupyterEnvironmentType) => {
+                        await this.plugin.setJupyterEnvType(value);
+                    }).bind(this));
+            }).bind(this));
+
+        new Setting(this.containerEl)
+            .setName("Plugin customization")
+            .setHeading();
+        new Setting(this.containerEl)
             .setName("Display ribbon icon")
             .setDesc("Define whether or not you want this Jupyter plugin to use a ribbon icon.")
             .addToggle(((toggle: ToggleComponent) =>
@@ -81,39 +137,10 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+
         new Setting(this.containerEl)
-            .setName("Start Jupyter automatically")
-            .setDesc("If a .ipynb file is opened, a Jupyter server will be started automatically if needed.")
-            .addToggle(((toggle: ToggleComponent) => {
-                toggle
-                    .setValue(this.plugin.settings.startJupyterAuto)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setStartJupyterAuto(value);
-                    }).bind(this))
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Python executable to use")
-            .setDesc("Choose whether to simply use the `python` command or a specific path. Note that you will need to restart your Jupyter server if it is running before this setting is applied.")
-            .addDropdown(((dropdown: DropdownComponent) => {
-                dropdown
-                    .addOption(PythonExecutableType.PYTHON, "`python` command")
-                    .addOption(PythonExecutableType.PATH, "Specified executable path")
-                    .setValue(this.plugin.settings.pythonExecutable)
-                    .onChange((async (value: PythonExecutableType) => {
-                        await this.plugin.setPythonExecutable(value);
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Python executable path")
-            .setDesc("The path to the Python executable to use. This setting is only used if the previous setting is set to `Specified executable path`.")
-            .addText(((text: TextComponent) => {
-                text
-                    .setPlaceholder("Path to Python executable")
-                    .setValue(this.plugin.settings.pythonExecutablePath)
-                    .onChange((async (value: string) => {
-                        await this.plugin.setPythonExecutablePath(value);
-                    }).bind(this));
-            }).bind(this));
+            .setName("Advanced")
+            .setHeading();
         new Setting(this.containerEl)
             .setName("Jupyter starting timeout")
             .setDesc("To avoid Jupyter being stuck in the starting phase, a timeout is set by default. You can set how many seconds to wait before killing the Jupyter server. Set to 0 to disable the timeout. Please note that a timeout too small might prevent Jupyter from ever starting.")
@@ -124,18 +151,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setDynamicTooltip()
                     .onChange((async (value: number) => {
                         await this.plugin.setJupyterTimeoutMs(value * 1000);
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Jupyter environment type")
-            .setDesc("Select whether to start Jupyter Notebook or Jupyter Lab.")
-            .addDropdown(((dropdown: DropdownComponent) => {
-                dropdown
-                    .addOption(JupyterEnvironmentType.LAB, "Jupyter Lab")
-                    .addOption(JupyterEnvironmentType.NOTEBOOK, "Jupyter Notebook")
-                    .setValue(this.plugin.settings.jupyterEnvType)
-                    .onChange((async (value: JupyterEnvironmentType) => {
-                        await this.plugin.setJupyterEnvType(value);
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)
