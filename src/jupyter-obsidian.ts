@@ -1,5 +1,5 @@
 import { FileSystemAdapter, Notice, Plugin, setIcon, setTooltip } from "obsidian";
-import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
+import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./jupyter-modal";
@@ -11,7 +11,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
 		DEFAULT_SETTINGS.debugConsole,
 		DEFAULT_SETTINGS.pythonExecutable === PythonExecutableType.PYTHON ? "python" : DEFAULT_SETTINGS.pythonExecutablePath,
-		DEFAULT_SETTINGS.jupyterTimeoutMs
+		DEFAULT_SETTINGS.jupyterTimeoutMs,
+		DEFAULT_SETTINGS.jupyterEnvType
 	);
 	private ribbonIcon: HTMLElement|null = null;
 
@@ -20,6 +21,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.printDebugMessages(this.settings.debugConsole);
 		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
 		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
+		this.env.setType(this.settings.jupyterEnvType);
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
@@ -82,6 +84,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.jupyterTimeoutMs = value;
 		await this.saveSettings();
 		this.env.setJupyterTimeoutMs(value);
+	}
+
+	public async setJupyterEnvType(value: JupyterEnvironmentType) {
+		this.settings.jupyterEnvType = value;
+		await this.saveSettings();
+		this.env.setType(value);
 	}
 
 	public async setDebugConsole(value: boolean) {

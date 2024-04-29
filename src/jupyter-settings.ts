@@ -1,6 +1,6 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
-import { JupyterEnvironmentStatus } from "./jupyter-env";
+import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 
 export enum PythonExecutableType {
     PYTHON = "python",
@@ -14,7 +14,8 @@ export interface JupyterSettings {
     startJupyterAuto: boolean;
     pythonExecutablePath: string,
     pythonExecutable: PythonExecutableType,
-    jupyterTimeoutMs: number
+    jupyterTimeoutMs: number,
+    jupyterEnvType: JupyterEnvironmentType
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
@@ -23,7 +24,8 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     startJupyterAuto: true,
     pythonExecutablePath: "",
     pythonExecutable: PythonExecutableType.PYTHON,
-    jupyterTimeoutMs: 30000
+    jupyterTimeoutMs: 30000,
+    jupyterEnvType: JupyterEnvironmentType.LAB
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -122,6 +124,18 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setDynamicTooltip()
                     .onChange((async (value: number) => {
                         await this.plugin.setJupyterTimeoutMs(value * 1000);
+                    }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Jupyter environment type")
+            .setDesc("Select whether to start Jupyter Notebook or Jupyter Lab.")
+            .addDropdown(((dropdown: DropdownComponent) => {
+                dropdown
+                    .addOption(JupyterEnvironmentType.LAB, "Jupyter Lab")
+                    .addOption(JupyterEnvironmentType.NOTEBOOK, "Jupyter Notebook")
+                    .setValue(this.plugin.settings.jupyterEnvType)
+                    .onChange((async (value: JupyterEnvironmentType) => {
+                        await this.plugin.setJupyterEnvType(value);
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)

@@ -2,6 +2,11 @@ import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
 import { Debouncer, debounce } from "obsidian";
 
+export enum JupyterEnvironmentType {
+    NOTEBOOK = "notebook",
+    LAB = "lab"
+}
+
 export enum JupyterEnvironmentEvent {
     /**
      * When the Jupyter child process has been started, but the server is not ready yet.
@@ -45,13 +50,14 @@ export class JupyterEnvironment {
     private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
+    private runningType: JupyterEnvironmentType|null = null;
 
     private jupyterExitListener: (code: number|null, signal: NodeJS.Signals|null) => void = this.onJupyterExit.bind(this);
 
     private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
     private jupyerTimedOut: boolean = false;
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number) { }
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -75,7 +81,7 @@ export class JupyterEnvironment {
         }
 
         try {
-            this.jupyterProcess = spawn(this.pythonExecutable, ["-m", "notebook", "--no-browser"], {
+            this.jupyterProcess = spawn(this.pythonExecutable, ["-m", this.type === JupyterEnvironmentType.NOTEBOOK ? "notebook" : "jupyterlab", "--no-browser"], {
                 cwd: this.path
             });
         }
@@ -94,6 +100,7 @@ export class JupyterEnvironment {
             this.jupyterTimoutListener();
         }
 
+        this.runningType = this.type;
         this.status = JupyterEnvironmentStatus.STARTING;
         this.events.emit(JupyterEnvironmentEvent.STARTING, this);
         this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
@@ -115,7 +122,8 @@ export class JupyterEnvironment {
         // If not found yet, parse what Jupyter writes to the console to find
         // the port and the token to authenticate with.
         if (this.status == JupyterEnvironmentStatus.STARTING) {
-            const match = data.match(/http:\/\/localhost:(\d+)\/(?:tree)\?token=(\w+)/);
+            const regex = new RegExp(`http:\/\/localhost:(\\d+)\/(?:${this.runningType === JupyterEnvironmentType.NOTEBOOK ? "tree" : "lab"})\\?token=(\\w+)`);
+            const match = data.match(regex);
             if (match) {
                 this.jupyterTimoutListener.cancel();
                 this.jupyterPort = parseInt(match[1]);
@@ -135,6 +143,10 @@ export class JupyterEnvironment {
         this.printDebug = value;
     }
 
+    public setType(value: JupyterEnvironmentType) {
+        this.type = value;
+    }
+
     public setJupyterTimeoutMs(value: number) {
         if (value >= 0) { 
             this.jupyterTimeoutMs = value;
@@ -146,6 +158,10 @@ export class JupyterEnvironment {
 
     public getJupyterTimeoutMs(): number {
         return this.jupyterTimeoutMs;
+    }
+
+    public getRunningType(): JupyterEnvironmentType|null {
+        return this.runningType;
     }
 
     public getStatus(): JupyterEnvironmentStatus {
@@ -168,7 +184,7 @@ export class JupyterEnvironment {
             return null;
         }
 
-        return `http://localhost:${this.jupyterPort}/notebooks/${file}?token=${this.jupyterToken}`;
+        return `http://localhost:${this.jupyterPort}/${this.runningType === JupyterEnvironmentType.NOTEBOOK ? "notebooks" : "lab/tree"}/${file}?token=${this.jupyterToken}`;
     }
 
     public exit() {
@@ -193,6 +209,7 @@ export class JupyterEnvironment {
         this.jupyterProcess = null;
         this.jupyterPort = null;
         this.jupyterToken = null;
+        this.runningType = null;
         this.status = JupyterEnvironmentStatus.EXITED;
         this.events.emit(JupyterEnvironmentEvent.EXIT, this);
         this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
