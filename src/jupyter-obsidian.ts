@@ -57,11 +57,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
-	public async setCloseFilesWithServer(value: boolean) {
-		this.settings.closeFilesWithServer = value;
-		await this.saveSettings();
-	}
-
 	public async setPythonExecutable(value: PythonExecutableType) {
 		this.settings.pythonExecutable = value;
 		await this.saveSettings();
