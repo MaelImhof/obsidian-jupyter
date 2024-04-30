@@ -8,12 +8,12 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Welcome to the community! We're here to help you. Please fill out the following information to help us understand your issue better.
   - type: textarea
     id: explanation
     attributes:
       label: What's the situation?
       description: Tell us what you want to achieve, what happened and what you tried.
-      placeholder: "I'm trying to do X, but Y happens instead. I tried Z."
+      placeholder: "I'm want to achieve X, but Y happens instead. I tried Z."
     validations:
       required: true
