@@ -8,7 +8,7 @@ import * as Plugin from "./quartz/plugins"
  */
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: "🪴 Quartz 4.0",
+    pageTitle: "Jupyter for Obsidian",
     enableSPA: true,
     enablePopovers: true,
     analytics: {
@@ -16,7 +16,7 @@ const config: QuartzConfig = {
     },
     locale: "en-US",
     baseUrl: "maelimhof.github.io/obsidian-jupyter",
-    ignorePatterns: ["private", "templates", ".obsidian"],
+    ignorePatterns: [".obsidian"],
     defaultDateType: "created",
     theme: {
       fontOrigin: "googleFonts",
