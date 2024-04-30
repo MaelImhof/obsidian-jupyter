@@ -18,14 +18,6 @@ body:
     validations:
       required: true
   - type: textarea
-    id: use-case
-    attributes:
-      label: What's the use case?
-      description: Describe the context of use. How would you use this feature?
-      placeholder: "I would use this feature to do X."
-    validations:
-      required: true
-  - type: textarea
     id: alternatives
     attributes:
       label: Are there alternatives?
@@ -38,6 +30,6 @@ body:
     attributes:
       label: Additional information
       description: Add any other context or screenshots about the feature request here.
-      placeholder: "Add any other context or screenshots about the feature request here."
+      placeholder: "Context or screenshots about the feature request."
     validations:
       required: false
