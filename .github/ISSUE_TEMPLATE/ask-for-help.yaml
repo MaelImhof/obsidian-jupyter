@@ -1,0 +1,19 @@
+name: Ask for help
+description: Need help with Jupyter for Obsidian but not sure it is a bug.
+title: "[Help needed]: "
+labels: ["ask-for-help"]
+assignees:
+  - MaelImhof
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: explanation
+    attributes:
+      label: What's the situation?
+      description: Tell us what you want to achieve, what happened and what you tried.
+      placeholder: "I'm trying to do X, but Y happens instead. I tried Z."
+    validations:
+      required: true
