@@ -1,0 +1,50 @@
+name: Bug Report
+description: Report a bug or issue you are experiencing with the plugin.
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - MaelImhof
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: explanation
+    attributes:
+      label: What's the issue?
+      description: Describe the issue you are experiencing.
+      placeholder: "I'm trying to do X, but Y happens instead."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce?
+      description: Describe the steps to reproduce the issue.
+      placeholder: "1. Open a note with X content. 2. Click on Y. 3. See error Z."
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: What's the expected behavior?
+      description: Describe what you expect to happen.
+      placeholder: "I expect to see Z when I do Y."
+    validations:
+      required: true
+  - type: textarea
+    id: tried-solutions
+    attributes:
+      label: What have you tried?
+      description: Describe any solutions or features you've tried.
+      placeholder: "I tried X, Y, and Z but the issue persists."
+    validations:
+      required: true
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Add any other context or screenshots about the issue here.
+    validations:
+      required: false

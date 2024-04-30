@@ -1,0 +1,43 @@
+name: Feature Request
+description: Suggest a new feature or improvement. Give ideas that could be added to the plugin.
+title: "[Feature Request]: "
+labels: ["feature-request"]
+assignees:
+  - MaelImhof
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    id: explanation
+    attributes:
+      label: What's the feature request?
+      description: Describe the feature you would like to see added.
+      placeholder: "I would like to see X added to the plugin."
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What's the use case?
+      description: Describe the context of use. How would you use this feature?
+      placeholder: "I would use this feature to do X."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Are there alternatives?
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: "I could do X manually, but it would be great if the plugin could do it for me."
+    validations:
+      required: false
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Add any other context or screenshots about the feature request here.
+      placeholder: "Add any other context or screenshots about the feature request here."
+    validations:
+      required: false
