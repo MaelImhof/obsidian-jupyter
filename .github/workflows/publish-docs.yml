@@ -1,9 +1,9 @@
-name: Deploy Quartz site to GitHub Pages
+name: Deploy docs to GitHub Pages using Quartz
  
 on:
   push:
     branches:
-      - test-docs
+      - release
  
 permissions:
   contents: read
