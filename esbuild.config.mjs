@@ -10,7 +10,7 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const test_dir = "test-obsidian-vault/.obsidian/plugins/jupyter";
+const test_dir = "test-vault/.obsidian/plugins/jupyter";
 const prod = (process.argv[2] === "production");
 
 const context = await esbuild.context({
