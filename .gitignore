@@ -23,9 +23,9 @@ core-plugins.json
 core-plugins-migration.json
 workspace.json
 data.json
-./styles.css
-./manifest.json
-./versions.json
+styles.css
+manifest.json
+versions.json
 !test-obsidian-vault/.obsidian/plugins/hot-reload/main.js
 .ipynb_checkpoints
 
