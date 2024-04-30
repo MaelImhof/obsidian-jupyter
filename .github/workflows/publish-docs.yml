@@ -24,11 +24,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.14
-      - name: Move into docs directory
-        run: cd docs
       - name: Install Dependencies
+        working-directory: docs
         run: npm ci
       - name: Build Quartz
+        working-directory: docs
         run: npx quartz build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
