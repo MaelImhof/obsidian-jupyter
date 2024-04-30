@@ -6,7 +6,7 @@ For more information, please refer to the documentation website [https://jupyter
 
 ## Structure of the repository
 
-> [!INFO]
+> [!NOTE]
 > `main.js`, `manifest.json` and `versions.json` are in `test-vault/.obsidian/plugins/jupyter/`. They are copied to the root directory when running `npm run build`.
 
 - **`docs`** contains a [Quartz](https://github.com/jackyzha0/quartz) installation used to generate the documentation website.
