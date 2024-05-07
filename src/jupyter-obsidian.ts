@@ -146,7 +146,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 				[
 					{
 						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-timeout", "_blank"); },
 						closeOnClick: false
 					}
 				]
@@ -165,7 +165,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 				[
 					{
 						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://github.com/MaelImhof/obsidian-jupyter/issues/", "_blank"); },
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#" + (error === JupyterEnvironmentError.UNABLE_TO_START_JUPYTER ? "jupyter-process-could-not-be-spawned" : "jupyter-process-crashed"), "_blank"); },
 						closeOnClick: false
 					}
 				]
