@@ -1,7 +1,7 @@
 {
 	"id": "jupyter",
 	"name": "Jupyter",
-	"version": "0.2.1-beta",
+	"version": "0.3.0-beta",
 	"minAppVersion": "0.15.0",
 	"description": "Open .ipynb files with Jupyter in Obsidian.",
 	"author": "Maël Imhof",

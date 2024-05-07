@@ -23,7 +23,21 @@ This Obsidian plugin is entering beta now. I want to gather feedback and improve
 
 ## Installing the plugin
 
-> [!TODO] Do this installing plugin with BRAT section
+Because Jupyter for Obsidian is not available in the Obsidian community plugins for now, you'll need the [BRAT plugin](https://tfthacker.com/brat-quick-guide#Stopping%20beta%20plugin%20updates/deleting%20a%20beta%20plugin) to install Jupyter for Obsidian.
+
+Here is how to proceed :
+
+1. Backup your vault!
+2. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin from the Obsidian community plugins.
+3. Go in BRAT settings and click `Add Beta plugin`
+   
+   ![[add-beta-plugin.png]]
+4. Use `https://github.com/MaelImhof/obsidian-jupyter` as the URL, tick `Enable after installing the plugin` and click `Add Plugin`.
+   
+   ![[popup-add-plugin.png]]
+5. Voilà! The plugin should now be installed in your vault. Use it as a normal plugin and **provide feedback** about the beta.
+   
+   ![[setup-done.png]]
 ## Providing Feedback
 
 Once the plugin is installed, you can start using it normally in your Obsidian vault. Discover the [[discover|features of the plugin]] and try playing a bit with it, see how it integrates with your workflow.
