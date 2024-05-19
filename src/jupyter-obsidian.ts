@@ -36,29 +36,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	public async setRibbonIconSetting(value: boolean) {
-		this.settings.displayRibbonIcon = value;
-		await this.saveSettings();
-		if (!value) {
-			this.ribbonIcon?.remove();
-			this.ribbonIcon = null;
-		}
-		else {
-			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
-			this.updateRibbon(this.env);
-		}
-	}
-
-	public async setStatusNoticesSetting(value: boolean) {
-		this.settings.useStatusNotices = value;
-		await this.saveSettings();
-	}
-
-	public async setStartJupyterAuto(value: boolean) {
-		this.settings.startJupyterAuto = value;
-		await this.saveSettings();
-	}
-
 	public async setPythonExecutable(value: PythonExecutableType) {
 		this.settings.pythonExecutable = value;
 		await this.saveSettings();
@@ -80,16 +57,49 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
-	public async setJupyterTimeoutMs(value: number) {
-		this.settings.jupyterTimeoutMs = value;
+	public async setStartJupyterAuto(value: boolean) {
+		this.settings.startJupyterAuto = value;
 		await this.saveSettings();
-		this.env.setJupyterTimeoutMs(value);
 	}
 
 	public async setJupyterEnvType(value: JupyterEnvironmentType) {
 		this.settings.jupyterEnvType = value;
 		await this.saveSettings();
 		this.env.setType(value);
+	}
+
+	public async setDeleteCheckpoints(value: boolean) {
+		this.settings.deleteCheckpoints = value;
+		await this.saveSettings();
+	}
+
+	public async setCheckpointsFoldername(value: string) {
+		this.settings.checkpointsFoldername = value;
+		await this.saveSettings();
+	}
+
+	public async setRibbonIconSetting(value: boolean) {
+		this.settings.displayRibbonIcon = value;
+		await this.saveSettings();
+		if (!value) {
+			this.ribbonIcon?.remove();
+			this.ribbonIcon = null;
+		}
+		else {
+			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+			this.updateRibbon(this.env);
+		}
+	}
+
+	public async setStatusNoticesSetting(value: boolean) {
+		this.settings.useStatusNotices = value;
+		await this.saveSettings();
+	}
+
+	public async setJupyterTimeoutMs(value: number) {
+		this.settings.jupyterTimeoutMs = value;
+		await this.saveSettings();
+		this.env.setJupyterTimeoutMs(value);
 	}
 
 	public async setDebugConsole(value: boolean) {
