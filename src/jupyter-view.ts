@@ -1,4 +1,4 @@
-import { FileView, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { FileView, ItemView, Notice, TFile, TFolder, WorkspaceLeaf, normalizePath } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
 
@@ -135,7 +135,20 @@ export class EmbeddedJupyterView extends FileView {
         this.messageContainerEl = null;
         this.messageHeaderEl = null;
         this.messageTextEl = null;
+        this.webviewEl?.remove();
         this.webviewEl = null;
+
+        // Delete the automatically generated checkpoints if enabled
+        if (this.plugin.settings.deleteCheckpoints && this.file) {
+            let parentFolder: string|undefined = this.file?.parent?.path;
+            if (parentFolder) {
+                let checkpointsFolderpath: string = parentFolder.endsWith('/')
+                    ? parentFolder + this.plugin.settings.checkpointsFoldername
+                    : parentFolder + '/' + this.plugin.settings.checkpointsFoldername;
+                let pathToDelete: string = normalizePath(checkpointsFolderpath);
+                this.file.vault.adapter.rmdir(pathToDelete, true);
+            }
+        }
 
         this.plugin.env.off(JupyterEnvironmentEvent.CHANGE, this.changeEventListener);
     }
