@@ -7,7 +7,6 @@ export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
 export class EmbeddedJupyterView extends FileView {
 
-    private readonly runningEventListener = this.onJupyterRunning.bind(this);
     private readonly changeEventListener = this.onJupyterEnvironmentStatusChange.bind(this);
 
     private openedFile: TFile | null = null;
