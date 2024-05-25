@@ -87,6 +87,7 @@ export class EmbeddedJupyterView extends FileView {
         switch (env.getStatus()) {
             case JupyterEnvironmentStatus.STARTING:
                 this.displayMessage("Jupyter is starting", "The Jupyter server is not ready yet. Your document will be opened shortly.");
+                this.plugin.registerCheckpointsFolder(this.checkpointFolder);
                 break;
             case JupyterEnvironmentStatus.RUNNING:
                 await this.onJupyterRunning(env);

@@ -235,12 +235,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	private checkpointFolders: string[] = [];
 
-	public registerCheckpointsFolder(folder: string) {
+	public registerCheckpointsFolder(folder: string | null) {
 		if (folder === null || folder === "") {
 			return;
 		}
 
-		if (this.env.isRunning() && !this.checkpointFolders.contains(folder)) {
+		if (this.env.getStatus() !== JupyterEnvironmentStatus.EXITED && !this.checkpointFolders.contains(folder)) {
 			this.checkpointFolders.push(normalizePath(folder));
 		}
 	}
