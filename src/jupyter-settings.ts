@@ -39,7 +39,12 @@ export class JupyterSettingsTab extends PluginSettingTab {
 
     display() {
         this.containerEl.empty();
-        
+
+
+        /*=====================================================*/
+	    /* Python settings                                     */
+	    /*=====================================================*/
+
         new Setting(this.containerEl)
             .setName("Python")
             .setHeading();
@@ -66,6 +71,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setPythonExecutablePath(value);
                     }).bind(this));
             }).bind(this));
+
+
+        /*=====================================================*/
+	    /* Jupyter settings                                    */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Jupyter")
@@ -139,6 +149,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this))
             ).bind(this));
 
+
+        /*=====================================================*/
+	    /* Plugin customization settings                       */
+	    /*=====================================================*/
+
         new Setting(this.containerEl)
             .setName("Plugin customization")
             .setHeading();
@@ -162,6 +177,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+
+
+        /*=====================================================*/
+	    /* Advanced settings                                   */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Advanced")
