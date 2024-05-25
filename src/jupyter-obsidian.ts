@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Notice, Plugin, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
@@ -34,6 +34,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
+		this.env.on(JupyterEnvironmentEvent.EXIT, this.onEnvironmentExit.bind(this));
 		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
@@ -104,6 +105,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 	public async setCheckpointsFoldername(value: string) {
 		this.settings.checkpointsFoldername = value;
+		await this.saveSettings();
+	}
+	public async setMoveCheckpointsToTrash(value: boolean) {
+		this.settings.moveCheckpointsToTrash = value;
 		await this.saveSettings();
 	}
 	public async setRibbonIconSetting(value: boolean) {
@@ -218,5 +223,43 @@ export default class JupyterNotebookPlugin extends Plugin {
 				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
 		}
+	}
+	private onEnvironmentExit(_env: JupyterEnvironment) {
+		this.purgeCheckpointFolders();
+	}
+
+
+	/*=====================================================*/
+	/* Jupyter checkpoints management                      */
+	/*=====================================================*/
+
+	private checkpointFolders: string[] = [];
+
+	public registerCheckpointsFolder(folder: string) {
+		if (folder === null || folder === "") {
+			return;
+		}
+
+		if (this.env.isRunning() && !this.checkpointFolders.contains(folder)) {
+			this.checkpointFolders.push(normalizePath(folder));
+		}
+	}
+	private purgeCheckpointFolders() {
+		if (!this.settings.deleteCheckpoints) {
+			return;
+		}
+
+		if (this.settings.moveCheckpointsToTrash) {
+			for (const folder of this.checkpointFolders) {
+				this.app.vault.adapter.trashSystem(folder);
+			}
+		}
+		else {
+			for (const folder of this.checkpointFolders) {
+				this.app.vault.adapter.rmdir(folder, true);
+			}
+		}
+
+		this.checkpointFolders = [];
 	}
 }

@@ -14,6 +14,7 @@ export interface JupyterSettings {
     jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     checkpointsFoldername: string;
+    moveCheckpointsToTrash: boolean;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
@@ -26,6 +27,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     checkpointsFoldername: ".ipynb_checkpoints",
+    moveCheckpointsToTrash: true,
     displayRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
@@ -148,6 +150,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setCheckpointsFoldername(value);
                     }).bind(this))
             ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Move Jupyter checkpoints to trash")
+            .setDesc("If enabled, the Jupyter checkpoints will be moved to the trash instead of being deleted permanently. If you might have folders that could could get deleted by mistake because of having the same name, keep this setting enabled.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.moveCheckpointsToTrash)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setMoveCheckpointsToTrash(value);
+                    }))
+            ).bind(this))
 
 
         /*=====================================================*/

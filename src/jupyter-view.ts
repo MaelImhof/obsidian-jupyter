@@ -9,6 +9,7 @@ export class EmbeddedJupyterView extends FileView {
     private readonly changeEventListener = this.onJupyterEnvironmentStatusChange.bind(this);
 
     private openedFile: TFile | null = null;
+    private checkpointFolder: string | null = null;
 
     private messageContainerEl: HTMLElement | null = null;
     private messageHeaderEl: HTMLElement | null = null;
@@ -48,6 +49,18 @@ export class EmbeddedJupyterView extends FileView {
     async onLoadFile(file: TFile) {
 
         this.openedFile = file;
+
+        // Compute the checkpoint folder path for this file
+        let parentFolder: string|undefined = file.parent?.path;
+        if (parentFolder) {
+            this.checkpointFolder = parentFolder.endsWith('/')
+                ? parentFolder + this.plugin.settings.checkpointsFoldername
+                : parentFolder + '/' + this.plugin.settings.checkpointsFoldername;
+            this.plugin.registerCheckpointsFolder(this.checkpointFolder);
+        }
+        else {
+            this.checkpointFolder = null;
+        }
 
         // Check the Jupyter environment status
         switch (this.plugin.env.getStatus()) {
@@ -145,7 +158,12 @@ export class EmbeddedJupyterView extends FileView {
                     ? parentFolder + this.plugin.settings.checkpointsFoldername
                     : parentFolder + '/' + this.plugin.settings.checkpointsFoldername;
                 let pathToDelete: string = normalizePath(checkpointsFolderpath);
-                this.file.vault.adapter.rmdir(pathToDelete, true);
+                if (this.plugin.settings.moveCheckpointsToTrash) {
+                    this.file.vault.adapter.trashSystem(pathToDelete);
+                }
+                else {
+                    this.file.vault.adapter.rmdir(pathToDelete, true);
+                }
             }
         }
 
