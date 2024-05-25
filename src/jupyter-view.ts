@@ -1,4 +1,4 @@
-import { FileView, ItemView, Notice, TFile, TFolder, WorkspaceLeaf, normalizePath } from "obsidian";
+import { FileView, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
 
