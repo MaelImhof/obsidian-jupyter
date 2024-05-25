@@ -6,6 +6,10 @@ import { JupyterModal } from "./jupyter-modal";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
+	/*=====================================================*/
+	/* Plugin instance properties                          */
+	/*=====================================================*/
+
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
 	public readonly env: JupyterEnvironment = new JupyterEnvironment(
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
@@ -15,6 +19,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		DEFAULT_SETTINGS.jupyterEnvType
 	);
 	private ribbonIcon: HTMLElement|null = null;
+
+
+	/*=====================================================*/
+	/* Obsidian hooks (load, unload)                       */
+	/*=====================================================*/
 
     async onload() {
 		await this.loadSettings();
@@ -31,6 +40,32 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
 	}
+	async onunload() {
+		await this.saveSettings();
+		// Kill the Jupyter Notebook process
+		this.env.exit();
+	}
+
+
+	/*=====================================================*/
+	/* UI Events (ribbon icon, server setting)             */
+	/*=====================================================*/
+
+	private async toggleJupyter() {
+		switch (this.env.getStatus()) {
+			case JupyterEnvironmentStatus.EXITED:
+				this.env.start();
+				break;
+			case JupyterEnvironmentStatus.RUNNING:
+				this.env.exit();
+				break;
+		}
+	}
+
+
+	/*=====================================================*/
+	/* Settings (load, save, set values)                   */
+	/*=====================================================*/
 
 	private async loadSettings() {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
@@ -101,16 +136,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private async toggleJupyter() {
-		switch (this.env.getStatus()) {
-			case JupyterEnvironmentStatus.EXITED:
-				this.env.start();
-				break;
-			case JupyterEnvironmentStatus.RUNNING:
-				this.env.exit();
-				break;
-		}
-	}
+
+	/*=====================================================*/
+	/* Jupyter Environment event (on change, error, exit)  */
+	/*=====================================================*/
 
 	private showStatusMessage() {
 		if (!this.settings.useStatusNotices) {
@@ -130,7 +159,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	
 	}
-
 	private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError) {
 		if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
 			new JupyterModal(
@@ -171,7 +199,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			).open();
 		}
 	}
-
 	private async updateRibbon(env: JupyterEnvironment) {
 		if (this.ribbonIcon === null || !this.settings.displayRibbonIcon) {
 			return;
@@ -191,11 +218,5 @@ export default class JupyterNotebookPlugin extends Plugin {
 				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
 		}
-	}
-
-	async onunload() {
-		await this.saveSettings();
-		// Kill the Jupyter Notebook process
-		this.env.exit();
 	}
 }
