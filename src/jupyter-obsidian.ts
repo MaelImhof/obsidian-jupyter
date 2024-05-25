@@ -35,7 +35,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	private async loadSettings() {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
 	}
-
 	public async setPythonExecutable(value: PythonExecutableType) {
 		this.settings.pythonExecutable = value;
 		await this.saveSettings();
@@ -48,7 +47,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 				break;
 		}
 	}
-
 	public async setPythonExecutablePath(value: string) {
 		this.settings.pythonExecutablePath = value;
 		await this.saveSettings();
@@ -56,28 +54,23 @@ export default class JupyterNotebookPlugin extends Plugin {
 			this.env.setPythonExecutable(value);
 		}
 	}
-
 	public async setStartJupyterAuto(value: boolean) {
 		this.settings.startJupyterAuto = value;
 		await this.saveSettings();
 	}
-
 	public async setJupyterEnvType(value: JupyterEnvironmentType) {
 		this.settings.jupyterEnvType = value;
 		await this.saveSettings();
 		this.env.setType(value);
 	}
-
 	public async setDeleteCheckpoints(value: boolean) {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
 	}
-
 	public async setCheckpointsFoldername(value: string) {
 		this.settings.checkpointsFoldername = value;
 		await this.saveSettings();
 	}
-
 	public async setRibbonIconSetting(value: boolean) {
 		this.settings.displayRibbonIcon = value;
 		await this.saveSettings();
@@ -90,24 +83,20 @@ export default class JupyterNotebookPlugin extends Plugin {
 			this.updateRibbon(this.env);
 		}
 	}
-
 	public async setStatusNoticesSetting(value: boolean) {
 		this.settings.useStatusNotices = value;
 		await this.saveSettings();
 	}
-
 	public async setJupyterTimeoutMs(value: number) {
 		this.settings.jupyterTimeoutMs = value;
 		await this.saveSettings();
 		this.env.setJupyterTimeoutMs(value);
 	}
-
 	public async setDebugConsole(value: boolean) {
 		this.settings.debugConsole = value;
 		await this.saveSettings();
 		this.env.printDebugMessages(this.settings.debugConsole);
 	}
-
 	public async saveSettings() {
 		await this.saveData(this.settings);
 	}
