@@ -41,11 +41,13 @@ export enum JupyterEnvironmentError {
     NONE = "No error was encountered.",
     UNABLE_TO_START_JUPYTER = "Jupyter process could not be spawned.",
     JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed.",
+    JUPYTER_EXITED_WITHOUT_ERROR = "Jupyter process exited.",
     JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
 export class JupyterEnvironment {
     private jupyterProcess: ChildProcessWithoutNullStreams|null = null;
+    private jupyterLog: string[] = [];
     private jupyterPort: number|null = null;
     private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
@@ -79,6 +81,9 @@ export class JupyterEnvironment {
         if (this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
             return;
         }
+
+        // Reset the saved logs.
+        this.jupyterLog = [];
 
         try {
             this.jupyterProcess = spawn(this.pythonExecutable, ["-m", this.type === JupyterEnvironmentType.NOTEBOOK ? "notebook" : "jupyterlab", "--no-browser"], {
@@ -115,6 +120,7 @@ export class JupyterEnvironment {
 
     private processJupyterOutput(data: string) {
         data = data.toString();
+        this.jupyterLog.push(data);
         if (this.printDebug) {
             console.debug(data.toString());
         }
@@ -176,6 +182,18 @@ export class JupyterEnvironment {
         return this.jupyterToken;
     }
 
+    public getLog(): string[] {
+        return this.jupyterLog;
+    }
+
+    public getLastLog(): string {
+        if (this.jupyterLog.length === 0) {
+            return "";
+        }
+
+        return this.jupyterLog[this.jupyterLog.length - 1];
+    }
+
     /**
      * @param file The path of the file relative to the Jupyter environment's working directy.
      */
@@ -204,6 +222,9 @@ export class JupyterEnvironment {
         else if (this.jupyerTimedOut) {
             this.jupyerTimedOut = false;
             this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT);
+        }
+        else if (this.status === JupyterEnvironmentStatus.STARTING) {
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITHOUT_ERROR);
         }
 
         this.jupyterProcess = null;

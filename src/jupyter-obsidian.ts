@@ -152,24 +152,63 @@ export default class JupyterNotebookPlugin extends Plugin {
 				]
 			).open();
 		}
-		else {
+		else if (error === JupyterEnvironmentError.UNABLE_TO_START_JUPYTER) {
 			new JupyterModal(
 				this.app,
-				"Jupyter Error",
+				"Couldn't start Jupyter",
 				[
-					"An error occurred while trying to start the Jupyter server.",
-					"Potential causes could be an invalid Python executable configured in the settings or Jupyter not being installed in the corresponding Python environment.",
-					"Use the button below to open the Jupyter plugin's troubleshooting guide.",
-					"Error code: " + error
+					"Jupyter could not even be started.",
+					"Please check your Python executable and make sure Jupyter is installed in the corresponding environment.",
+					"Use the button below to open the troubleshooting guide."
 				],
 				[
 					{
 						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#" + (error === JupyterEnvironmentError.UNABLE_TO_START_JUPYTER ? "jupyter-process-could-not-be-spawned" : "jupyter-process-crashed"), "_blank"); },
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-could-not-be-spawned", "_blank"); },
+						closeOnClick: false
+					}
+				]
+			)
+		}
+		else if (error === JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR) {
+			new JupyterModal(
+				this.app,
+				"Jupyter crashed",
+				[
+					"Jupyter crashed while starting",
+					"Use the button below to open the troubleshooting guide.",
+					"Here is the last log message from Jupyter:",
+					this.env.getLastLog()
+				],
+				[
+					{
+						text: "Open troubleshooting guide",
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-crashed", "_blank"); },
 						closeOnClick: false
 					}
 				]
 			).open();
+		}
+		else {
+			new JupyterModal(
+				this.app,
+				"Jupyter exited",
+				[
+					"Jupyter crashed while starting but did not encounter an error.",
+					"This is a very rare case and might be due to an 'exit()' statement that got lost in your Jupyter configuration.",
+					"Use the button below to open the troubleshooting guide.",
+					"Here is the last log message from Jupyter:",
+					this.env.getLastLog()
+				],
+				[
+					{
+						text: "Open troubleshooting guide",
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-exited", "_blank"); },
+						closeOnClick: false
+					}
+				]
+			).open();
+		
 		}
 	}
 

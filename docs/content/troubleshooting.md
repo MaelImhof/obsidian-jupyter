@@ -6,6 +6,7 @@ Here is a quick guide on possible fixes you can try to fix existing errors befor
 - [[#Existing Errors Codes]]
 	- [[#Jupyter process could not be spawned]]
 	- [[#Jupyter process crashed]]
+	- [[#Jupyter process exited]]
 	- [[#Jupyter Timeout]]
 - [[#Opening a Ticket]]
 ## Existing Errors Codes
@@ -24,6 +25,14 @@ Indicates that Jupyter was started but then crashed before being fully ready to 
 1. Check that Jupyter is installed in the provided Python environment. Depending on your [[settings#Jupyter environment type|Jupyter environment type]], you will want to check Jupyter Lab or Jupyter Notebook in particular. You can do this using the command `[python_executable] -m [notebook or jupyterlab]` and see if Jupyter starts normally.
 
 If the right Jupyter environment is installed, please [[#Opening a Ticket|open a ticket]].
+### Jupyter process exited
+
+Very rare case that indicates Jupyter exited while starting, but did not encounter any error. This means the Jupyter process exited with a `0` exit code, meaning the program exited normally.
+
+1. Check for an `exit()` statement lost in your [Jupyter configuration file](https://jupyter-notebook.readthedocs.io/en/v6.4.6/config.html) if you have one.
+2. For more advanced users, you can [[settings#Print Jupyter output to Obsidian console|enable Jupyter logging]] and try debugging the issue from the messages Jupyter gives you.
+
+If none of those work, please [[#Opening a Ticket|open a ticket]].
 ### Jupyter Timeout
 
 Indicates Jupyter was started and worked in the background for too long, thus it was considered that something was wrong.
