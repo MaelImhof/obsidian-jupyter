@@ -1,6 +1,7 @@
-import { FileView, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
+import { JupyterModalButton } from "./jupyter-modal";
 
 export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
@@ -32,10 +33,11 @@ export class EmbeddedJupyterView extends FileView {
         return "none";
     }
 
-    private displayMessage(header: string, text: string, clear: boolean = true): void {
-        if (clear) {
-            this.contentEl.empty();
-        }
+    private displayMessage(header: string, text: string, button: JupyterModalButton|null = null): void {
+        
+        // Clear the content of the view, only display the message
+        this.contentEl.empty();
+
         this.messageContainerEl = this.contentEl.createDiv();
         this.messageContainerEl.addClass("jupyter-message-container");
         this.messageHeaderEl = this.messageContainerEl.createEl("h2");
@@ -44,6 +46,12 @@ export class EmbeddedJupyterView extends FileView {
         this.messageTextEl = this.messageContainerEl.createEl("p");
         this.messageTextEl.addClass("jupyter-message-text");
         this.messageTextEl.setText(text);
+
+        if (button !== null) {
+            let buttonEl = new ButtonComponent(this.messageContainerEl);
+            buttonEl.setButtonText(button.text);
+            buttonEl.onClick(button.onClick.bind(this));
+        }
     }
     
     async onLoadFile(file: TFile) {
@@ -89,7 +97,17 @@ export class EmbeddedJupyterView extends FileView {
     }
 
     private displayExitMessage() {
-        this.displayMessage("Jupyter server exited", "The Jupyter server has exited. Please restart the server to view the file.");
+        this.displayMessage(
+            "Jupyter server exited",
+            "The Jupyter server has exited. Please restart the server to view the file.",
+            {
+                text: "Start Jupyter",
+                onClick: () => {
+                    this.plugin.env.start();
+                },
+                closeOnClick: false
+            }
+        );
     }
 
     private async onJupyterRunning(env: JupyterEnvironment) {
