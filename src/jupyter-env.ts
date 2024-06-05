@@ -46,6 +46,7 @@ export enum JupyterEnvironmentError {
 
 export class JupyterEnvironment {
     private jupyterProcess: ChildProcessWithoutNullStreams|null = null;
+    private jupyterLog: string[] = [];
     private jupyterPort: number|null = null;
     private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
@@ -79,6 +80,9 @@ export class JupyterEnvironment {
         if (this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
             return;
         }
+
+        // Reset the saved logs.
+        this.jupyterLog = [];
 
         try {
             this.jupyterProcess = spawn(this.pythonExecutable, ["-m", this.type === JupyterEnvironmentType.NOTEBOOK ? "notebook" : "jupyterlab", "--no-browser"], {
@@ -115,6 +119,7 @@ export class JupyterEnvironment {
 
     private processJupyterOutput(data: string) {
         data = data.toString();
+        this.jupyterLog.push(data);
         if (this.printDebug) {
             console.debug(data.toString());
         }
@@ -174,6 +179,18 @@ export class JupyterEnvironment {
 
     public getToken(): string|null {
         return this.jupyterToken;
+    }
+
+    public getLog(): string[] {
+        return this.jupyterLog;
+    }
+
+    public getLastLog(): string {
+        if (this.jupyterLog.length === 0) {
+            return "";
+        }
+
+        return this.jupyterLog[this.jupyterLog.length - 1];
     }
 
     /**
