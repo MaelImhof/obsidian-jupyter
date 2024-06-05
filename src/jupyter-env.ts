@@ -41,6 +41,7 @@ export enum JupyterEnvironmentError {
     NONE = "No error was encountered.",
     UNABLE_TO_START_JUPYTER = "Jupyter process could not be spawned.",
     JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed.",
+    JUPYTER_EXITED_WITHOUT_ERROR = "Jupyter process exited.",
     JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
@@ -221,6 +222,9 @@ export class JupyterEnvironment {
         else if (this.jupyerTimedOut) {
             this.jupyerTimedOut = false;
             this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT);
+        }
+        else if (this.status === JupyterEnvironmentStatus.STARTING) {
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITHOUT_ERROR);
         }
 
         this.jupyterProcess = null;

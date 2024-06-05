@@ -170,7 +170,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 				]
 			)
 		}
-		else {
+		else if (error === JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR) {
 			new JupyterModal(
 				this.app,
 				"Jupyter crashed",
@@ -188,6 +188,27 @@ export default class JupyterNotebookPlugin extends Plugin {
 					}
 				]
 			).open();
+		}
+		else {
+			new JupyterModal(
+				this.app,
+				"Jupyter exited",
+				[
+					"Jupyter crashed while starting but did not encounter an error.",
+					"This is a very rare case and might be due to an 'exit()' statement that got lost in your Jupyter configuration.",
+					"Use the button below to open the troubleshooting guide.",
+					"Here is the last log message from Jupyter:",
+					this.env.getLastLog()
+				],
+				[
+					{
+						text: "Open troubleshooting guide",
+						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-exited", "_blank"); },
+						closeOnClick: false
+					}
+				]
+			).open();
+		
 		}
 	}
 
