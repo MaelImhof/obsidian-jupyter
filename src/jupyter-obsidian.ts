@@ -106,6 +106,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.checkpointsFoldername = value;
 		await this.saveSettings();
 	}
+	public async setMoveCheckpointsToTrash(value: boolean) {
+		this.settings.moveCheckpointsToTrash = value;
+		await this.saveSettings();
+	}
 	public async setRibbonIconSetting(value: boolean) {
 		this.settings.displayRibbonIcon = value;
 		await this.saveSettings();
