@@ -73,9 +73,10 @@ export class JupyterEnvironment {
         this.events.once(event, callback);
     }
 
-    public isRunning(): boolean {
-        return this.jupyterProcess !== null && this.jupyterProcess.exitCode === null && this.status === JupyterEnvironmentStatus.RUNNING;
-    }
+
+	/*=====================================================*/
+	/* Public interface to start and stop the server       */
+	/*=====================================================*/
 
     public start() {
         if (this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
@@ -110,6 +111,16 @@ export class JupyterEnvironment {
         this.events.emit(JupyterEnvironmentEvent.STARTING, this);
         this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
     }
+    public exit() {
+        if (this.getStatus() !== JupyterEnvironmentStatus.EXITED && this.jupyterProcess !== null) {
+            this.jupyterProcess.kill("SIGINT");
+        }
+    }
+
+
+    /*=====================================================*/
+	/* Internal events                                     */
+	/*=====================================================*/
 
     private onJupyterTimeout() {
         if (this.status == JupyterEnvironmentStatus.STARTING) {
@@ -117,7 +128,6 @@ export class JupyterEnvironment {
             this.exit();
         }
     }
-
     private processJupyterOutput(data: string) {
         data = data.toString();
         this.jupyterLog.push(data);
@@ -140,77 +150,6 @@ export class JupyterEnvironment {
             }
         }
     }
-
-    public setPythonExecutable(value: string) {
-        this.pythonExecutable = value;
-    }
-
-    public printDebugMessages(value: boolean) {
-        this.printDebug = value;
-    }
-
-    public setType(value: JupyterEnvironmentType) {
-        this.type = value;
-    }
-
-    public setJupyterTimeoutMs(value: number) {
-        if (value >= 0) { 
-            this.jupyterTimeoutMs = value;
-            if (value > 0) {
-                this.jupyterTimoutListener = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
-            }
-        }
-    }
-
-    public getJupyterTimeoutMs(): number {
-        return this.jupyterTimeoutMs;
-    }
-
-    public getRunningType(): JupyterEnvironmentType|null {
-        return this.runningType;
-    }
-
-    public getStatus(): JupyterEnvironmentStatus {
-        return this.status;
-    }
-
-    public getPort(): number|null {
-        return this.jupyterPort;
-    }
-
-    public getToken(): string|null {
-        return this.jupyterToken;
-    }
-
-    public getLog(): string[] {
-        return this.jupyterLog;
-    }
-
-    public getLastLog(): string {
-        if (this.jupyterLog.length === 0) {
-            return "";
-        }
-
-        return this.jupyterLog[this.jupyterLog.length - 1];
-    }
-
-    /**
-     * @param file The path of the file relative to the Jupyter environment's working directy.
-     */
-    public getFileUrl(file: string): string|null {
-        if (!this.isRunning()) {
-            return null;
-        }
-
-        return `http://localhost:${this.jupyterPort}/${this.runningType === JupyterEnvironmentType.NOTEBOOK ? "notebooks" : "lab/tree"}/${file}?token=${this.jupyterToken}`;
-    }
-
-    public exit() {
-        if (this.getStatus() !== JupyterEnvironmentStatus.EXITED && this.jupyterProcess !== null) {
-            this.jupyterProcess.kill("SIGINT");
-        }
-    }
-
     private onJupyterExit(_code: number|null, _signal: NodeJS.Signals|null) {
         if (this.jupyterProcess === null) {
             return;
@@ -234,5 +173,66 @@ export class JupyterEnvironment {
         this.status = JupyterEnvironmentStatus.EXITED;
         this.events.emit(JupyterEnvironmentEvent.EXIT, this);
         this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+    }
+
+
+	/*=====================================================*/
+	/* Properties and public util functions                */
+	/*=====================================================*/
+
+    public isRunning(): boolean {
+        return this.jupyterProcess !== null && this.jupyterProcess.exitCode === null && this.status === JupyterEnvironmentStatus.RUNNING;
+    }
+    public setPythonExecutable(value: string) {
+        this.pythonExecutable = value;
+    }
+    public printDebugMessages(value: boolean) {
+        this.printDebug = value;
+    }
+    public setType(value: JupyterEnvironmentType) {
+        this.type = value;
+    }
+    public setJupyterTimeoutMs(value: number) {
+        if (value >= 0) { 
+            this.jupyterTimeoutMs = value;
+            if (value > 0) {
+                this.jupyterTimoutListener = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
+            }
+        }
+    }
+    public getJupyterTimeoutMs(): number {
+        return this.jupyterTimeoutMs;
+    }
+    public getRunningType(): JupyterEnvironmentType|null {
+        return this.runningType;
+    }
+    public getStatus(): JupyterEnvironmentStatus {
+        return this.status;
+    }
+    public getPort(): number|null {
+        return this.jupyterPort;
+    }
+    public getToken(): string|null {
+        return this.jupyterToken;
+    }
+    public getLog(): string[] {
+        return this.jupyterLog;
+    }
+    public getLastLog(): string {
+        if (this.jupyterLog.length === 0) {
+            return "";
+        }
+
+        return this.jupyterLog[this.jupyterLog.length - 1];
+    }
+    /**
+     * @param file The path of the file relative to the Jupyter environment's working directy.
+     */
+    public getFileUrl(file: string): string|null {
+        if (!this.isRunning()) {
+            return null;
+        }
+
+        return `http://localhost:${this.jupyterPort}/${this.runningType === JupyterEnvironmentType.NOTEBOOK ? "notebooks" : "lab/tree"}/${file}?token=${this.jupyterToken}`;
     }
 }
