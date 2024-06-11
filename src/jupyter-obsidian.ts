@@ -292,6 +292,21 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * Generates a Jupyter configuration file in the folder indicated by
+	 * `getCustomJupyterConfigPath()` with settings to put all checkpoints
+	 * in a single folder.
+	 */
+	private async generateJupyterConfig() {
+		const configContent = `c.FileContentsManager.checkpoints_kwargs = {'root_dir': r'C:\Users\maeli\Documents\GitHub\obsidian-jupyter\test-vault\.obsidian\plugins\jupyter\.checkpoints'}
+print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loaded successfully.")`
+		// Write the config to the file
+		await this.app.vault.adapter.write(
+			await this.getCustomJupyterConfigPath() + "jupyter_lab_config.py",
+			configContent
+		);
+	}
+
 	async onunload() {
 		await this.saveSettings();
 		// Kill the Jupyter Notebook process
