@@ -1,6 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
 import { Debouncer, debounce } from "obsidian";
+import { delimiter as path_delimiter } from "path";
 
 export enum JupyterEnvironmentType {
     NOTEBOOK = "notebook",
@@ -59,7 +60,7 @@ export class JupyterEnvironment {
     private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
     private jupyerTimedOut: boolean = false;
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType) { }
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType, private checkpointsPath: string|null) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -85,9 +86,19 @@ export class JupyterEnvironment {
         // Reset the saved logs.
         this.jupyterLog = [];
 
+        // Prepare the environment variables
+        let env = undefined;
+        if (this.checkpointsPath !== null) {
+            env = {
+                ...process.env,
+                JUPYTER_CONFIG_PATH: `${this.checkpointsPath}${path_delimiter}${process.env.JUPYTER_CONFIG_PATH}`
+            };
+        }
+
         try {
             this.jupyterProcess = spawn(this.pythonExecutable, ["-m", this.type === JupyterEnvironmentType.NOTEBOOK ? "notebook" : "jupyterlab", "--no-browser"], {
-                cwd: this.path
+                cwd: this.path,
+                env: env
             });
         }
         catch (e) {
@@ -160,6 +171,14 @@ export class JupyterEnvironment {
                 this.jupyterTimoutListener = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
             }
         }
+    }
+
+    public setCheckpointsPath(value: string|null) {
+        this.checkpointsPath = value;
+    }
+
+    public getCheckpointsPath(): string|null {
+        return this.checkpointsPath;
     }
 
     public getJupyterTimeoutMs(): number {
