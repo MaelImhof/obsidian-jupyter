@@ -95,6 +95,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public async setDeleteCheckpoints(value: boolean) {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
+		await this.getCheckpointsRootFolder();
 	}
 	
 	public async setMoveCheckpointsToTrash(value: boolean) {
@@ -240,6 +241,22 @@ export default class JupyterNotebookPlugin extends Plugin {
 				setIcon(this.ribbonIcon as HTMLElement, "monitor-play");
 				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
+		}
+	}
+
+	/**
+	 * For the feature that gets rid of the Jupyter checkpoints, the
+	 * plugin uses the Jupyter configuration to put all of the checkpoints
+	 * in a separate folder. This function computes and returns the absolute
+	 * (system) path to that folder, to pass it to Jupyter.
+	 */
+	private async getCheckpointsRootFolder(): Promise<string|null> {
+		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			return this.app.vault.adapter.getFullPath("/.ipynb_checkpoints/");
+		}
+		else {
+			return null;
 		}
 	}
 
