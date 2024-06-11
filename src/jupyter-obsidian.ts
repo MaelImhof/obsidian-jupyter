@@ -12,7 +12,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 		DEFAULT_SETTINGS.debugConsole,
 		DEFAULT_SETTINGS.pythonExecutable === PythonExecutableType.PYTHON ? "python" : DEFAULT_SETTINGS.pythonExecutablePath,
 		DEFAULT_SETTINGS.jupyterTimeoutMs,
-		DEFAULT_SETTINGS.jupyterEnvType
+		DEFAULT_SETTINGS.jupyterEnvType,
+		null
 	);
 	private ribbonIcon: HTMLElement|null = null;
 
@@ -22,6 +23,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
 		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
 		this.env.setType(this.settings.jupyterEnvType);
+		if (this.settings.deleteCheckpoints) {
+			this.env.setCheckpointsPath(await this.getCheckpointsRootFolder());
+		}
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
@@ -95,7 +99,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public async setDeleteCheckpoints(value: boolean) {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
-		await this.getCheckpointsRootFolder();
+		if (value) {
+			this.env.setCheckpointsPath(await this.getCustomJupyterConfigPath());
+		}
+		else {
+			this.env.setCheckpointsPath(null);
+		}
 	}
 	
 	public async setMoveCheckpointsToTrash(value: boolean) {
@@ -254,6 +263,29 @@ export default class JupyterNotebookPlugin extends Plugin {
 		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
 		if (this.app.vault.adapter instanceof FileSystemAdapter) {
 			return this.app.vault.adapter.getFullPath("/.ipynb_checkpoints/");
+		}
+		else {
+			return null;
+		}
+	}
+
+	private async getCustomJupyterConfigPath(): Promise<string|null> {
+		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			// If the path to the plugin's folder is set, use it
+			if (this.manifest.dir) {
+				return this.app.vault.adapter.getFullPath(this.manifest.dir + "/");
+			}
+			// Otherwise use the plugin id
+			else {
+				return this.app.vault.adapter.getFullPath(
+					this.app.vault.adapter.getBasePath()
+					+ this.app.vault.configDir
+					+ "plugins/"
+					+ this.manifest.id
+					+ "/"
+				);
+			}
 		}
 		else {
 			return null;
