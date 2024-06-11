@@ -12,6 +12,8 @@ export interface JupyterSettings {
     useStatusNotices: boolean;
     debugConsole: boolean;
     startJupyterAuto: boolean;
+    deleteCheckpoints: boolean;
+    moveCheckpointsToTrash: boolean;
     pythonExecutablePath: string,
     pythonExecutable: PythonExecutableType,
     jupyterTimeoutMs: number,
@@ -22,6 +24,8 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     useStatusNotices: true,
     debugConsole: false,
     startJupyterAuto: true,
+    deleteCheckpoints: false,
+    moveCheckpointsToTrash: true,
     pythonExecutablePath: "",
     pythonExecutable: PythonExecutableType.PYTHON,
     jupyterTimeoutMs: 30000,
@@ -112,6 +116,26 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .onChange((async (value: JupyterEnvironmentType) => {
                         await this.plugin.setJupyterEnvType(value);
                     }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Delete Jupyter checkpoints")
+            .setDesc("Jupyter automatically generates checkpoints when you are editing your notebooks. Those can get your vault messy. Enabling this setting will prevent new checkpoints from appearing, but does not work retroactively. You will need to start Jupyter again for this setting to take effect.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.deleteCheckpoints)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setDeleteCheckpoints(value);
+                    }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Move Jupyter checkpoints to trash")
+            .setDesc("Has no effect if 'Delete Jupyter checkpoints' is not enabled. Instead of deleting the checkpoints, they will be moved to the system trash. This can be useful if you want to keep a be able to restore some checkpoints.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.moveCheckpointsToTrash)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setMoveCheckpointsToTrash(value);
+                    }).bind(this))
             }).bind(this));
 
         new Setting(this.containerEl)

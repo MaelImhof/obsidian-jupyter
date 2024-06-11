@@ -92,6 +92,16 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.setType(value);
 	}
 
+	public async setDeleteCheckpoints(value: boolean) {
+		this.settings.deleteCheckpoints = value;
+		await this.saveSettings();
+	}
+	
+	public async setMoveCheckpointsToTrash(value: boolean) {
+		this.settings.moveCheckpointsToTrash = value;
+		await this.saveSettings();
+	}
+
 	public async setDebugConsole(value: boolean) {
 		this.settings.debugConsole = value;
 		await this.saveSettings();
