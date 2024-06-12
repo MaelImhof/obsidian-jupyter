@@ -24,11 +24,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
 		this.env.setType(this.settings.jupyterEnvType);
 		if (this.settings.deleteCheckpoints) {
-			this.env.setCheckpointsPath(await this.getCheckpointsRootFolder());
+			this.env.setCheckpointsPath(await this.getCheckpointsAbsoluteRootFolder());
 		}
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
+		this.env.on(JupyterEnvironmentEvent.EXIT, this.onJupyterExit.bind(this));
 		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
@@ -237,6 +238,19 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	private async onJupyterExit(_env: JupyterEnvironment) {
+		if (this.settings.deleteCheckpoints) {
+			// If the setting is enabled, purge the checkpoint folders
+			const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
+			if (this.settings.moveCheckpointsToTrash) {
+				this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
+			}
+			else {
+				this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
+			}
+		}
+	}
+
 	private async updateRibbon(env: JupyterEnvironment) {
 		if (this.ribbonIcon === null || !this.settings.displayRibbonIcon) {
 			return;
@@ -258,6 +272,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	private getCheckpointsRelativeRootFolder(): string {
+		return this.getCustomJupyterConfigFolderRelativePath() + ".ipynb_checkpoints/";
+	}
+
 	/**
 	 * For the feature that gets rid of the Jupyter checkpoints, the
 	 * plugin uses the Jupyter configuration to put all of the checkpoints
@@ -266,7 +284,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 * 
 	 * Ends with a trailing '/'.
 	 */
-	private getCheckpointsRootFolder(): string|null {
+	private getCheckpointsAbsoluteRootFolder(): string|null {
 		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
 		const absoluteFolderPath = this.getCustomJupyterConfigFolderPath();
 		if (absoluteFolderPath === null) {
@@ -354,7 +372,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 */
 	private async generateJupyterConfig(): Promise<boolean> {
 		// Then retrieve the path to the checkpoints folder
-		const absoluteCheckpointsFolderPath = this.getCheckpointsRootFolder();
+		const absoluteCheckpointsFolderPath = this.getCheckpointsAbsoluteRootFolder();
 		if (absoluteCheckpointsFolderPath === null) {
 			return false;
 		}
