@@ -60,7 +60,7 @@ export class JupyterEnvironment {
     private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
     private jupyerTimedOut: boolean = false;
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType, private checkpointsPath: string|null) { }
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType, private customConfigFolderPath: string|null) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -88,10 +88,10 @@ export class JupyterEnvironment {
 
         // Prepare the environment variables
         let env = undefined;
-        if (this.checkpointsPath !== null) {
+        if (this.customConfigFolderPath !== null) {
             env = {
                 ...process.env,
-                JUPYTER_CONFIG_PATH: `${this.checkpointsPath}${path_delimiter}${process.env.JUPYTER_CONFIG_PATH}`
+                JUPYTER_CONFIG_PATH: `${this.customConfigFolderPath}${path_delimiter}${process.env.JUPYTER_CONFIG_PATH}`
             };
         }
 
@@ -173,12 +173,12 @@ export class JupyterEnvironment {
         }
     }
 
-    public setCheckpointsPath(value: string|null) {
-        this.checkpointsPath = value;
+    public setCustomConfigFolderPath(value: string|null) {
+        this.customConfigFolderPath = value;
     }
 
-    public getCheckpointsPath(): string|null {
-        return this.checkpointsPath;
+    public getCustomConfigFolderPath(): string|null {
+        return this.customConfigFolderPath;
     }
 
     public getJupyterTimeoutMs(): number {

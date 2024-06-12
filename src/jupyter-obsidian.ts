@@ -24,7 +24,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
 		this.env.setType(this.settings.jupyterEnvType);
 		if (this.settings.deleteCheckpoints) {
-			this.env.setCheckpointsPath(await this.getCheckpointsAbsoluteRootFolder());
+			this.env.setCustomConfigFolderPath(this.getCheckpointsAbsoluteRootFolder());
 		}
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
@@ -102,11 +102,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 		if (value) {
 			this.generateJupyterConfig();
-			this.env.setCheckpointsPath(this.getCustomJupyterConfigFolderPath());
+			this.env.setCustomConfigFolderPath(this.getCustomJupyterConfigFolderPath());
 		}
 		else {
 			this.deleteJupyterConfig();
-			this.env.setCheckpointsPath(null);
+			this.env.setCustomConfigFolderPath(null);
 		}
 	}
 	
