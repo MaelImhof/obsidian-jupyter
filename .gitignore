@@ -13,6 +13,9 @@ node_modules
 main.js
 !test-vault/.obsidian/plugins/hot-reload/main.js
 
+# Don't include the generate Jupyter configuration file
+test-vault/.obsidian/plugins/jupyter/jupyter_lab_config.py
+
 # Exclude sourcemaps
 *.map
 
