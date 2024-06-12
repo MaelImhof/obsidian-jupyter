@@ -100,9 +100,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
 		if (value) {
-			this.env.setCheckpointsPath(await this.getCustomJupyterConfigFolderPath());
+			this.generateJupyterConfig();
+			this.env.setCheckpointsPath(this.getCustomJupyterConfigFolderPath());
 		}
 		else {
+			this.deleteJupyterConfig();
 			this.env.setCheckpointsPath(null);
 		}
 	}
@@ -258,51 +260,73 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 * plugin uses the Jupyter configuration to put all of the checkpoints
 	 * in a separate folder. This function computes and returns the absolute
 	 * (system) path to that folder, to pass it to Jupyter.
+	 * 
+	 * Ends with a trailing '/'.
 	 */
-	private async getCheckpointsRootFolder(): Promise<string|null> {
+	private getCheckpointsRootFolder(): string|null {
 		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
-		if (this.app.vault.adapter instanceof FileSystemAdapter) {
-			return this.app.vault.adapter.getFullPath("/.ipynb_checkpoints/");
-		}
-		else {
+		const absoluteFolderPath = this.getCustomJupyterConfigFolderPath();
+		if (absoluteFolderPath === null) {
 			return null;
 		}
+
+		return absoluteFolderPath + ".ipynb_checkpoints/";
 	}
 
-	private async getCustomJupyterConfigFolderPath(): Promise<string|null> {
-		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
-		if (this.app.vault.adapter instanceof FileSystemAdapter) {
-			// If the path to the plugin's folder is set, use it
-			if (this.manifest.dir) {
-				return this.app.vault.adapter.getFullPath(this.manifest.dir + "/");
-			}
-			// Otherwise use the plugin id
-			else {
-				return this.app.vault.adapter.getFullPath(
-					this.app.vault.adapter.getBasePath()
-					+ this.app.vault.configDir
-					+ "plugins/"
-					+ this.manifest.id
-					+ "/"
-				);
-			}
-		}
-		else {
-			return null;
-		}
-	}
-
-	private async getCustomJupyterConfigFilePath(): Promise<string|null> {
-		const folderPath = await this.getCustomJupyterConfigFolderPath();
-		if (folderPath === null) {
-			return null;
-		}
-		return folderPath + this.getCustomJupyterConfigFilename();
-	
-	}
-
+	/**
+	 * The name of the Jupyter configuration file that the plugin uses
+	 * to get rid of the checkpoints. No folders involved in this value.
+	 * 
+	 * Probably has the form `jupyter_someapp_config.py`.
+	 */
 	private getCustomJupyterConfigFilename(): string {
 		return "jupyter_lab_config.py";
+	}
+
+	/**
+	 * Returns the path to the folder where the Jupyter configuration file
+	 * is placed relative to the vault's root.
+	 * 
+	 * Ends with a trailing '/'.
+	 */
+	private getCustomJupyterConfigFolderRelativePath(): string {
+		if (this.manifest.dir) {
+			return this.manifest.dir + "/";
+		}
+		else {
+			return this.app.vault.configDir
+				+ "/plugins/"
+				+ this.manifest.id
+				+ "/";
+		}
+	}
+
+	/**
+	 * Returns the path to the Jupyter configuration file relative to the
+	 * vault's root.
+	 */
+	private getCustomJupyterConfigFileRelativePath(): string {
+		return this.getCustomJupyterConfigFolderRelativePath()
+			+ this.getCustomJupyterConfigFilename();
+	}
+
+	/**
+	 * Returns the absolute path (not relative to the vault's root) to the
+	 * folder where the Jupyter configuration file is placed.
+	 * 
+	 * Returns null if on mobile.
+	 */
+	private getCustomJupyterConfigFolderPath(): string|null {
+		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			// Get the relative path to the folder
+			const relativeFolderPath = this.getCustomJupyterConfigFolderRelativePath();
+			// Get the absolute path to the folder
+			return this.app.vault.adapter.getFullPath(relativeFolderPath);
+		}
+		else {
+			return null;
+		}
 	}
 
 	/**
@@ -311,27 +335,29 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 * in a single folder.
 	 */
 	private async generateJupyterConfig(): Promise<boolean> {
-		// First check that the path is defined
-		const configPath = await this.getCustomJupyterConfigFilePath();
-		if (configPath === null) {
+		// Then retrieve the path to the checkpoints folder
+		const absoluteCheckpointsFolderPath = this.getCheckpointsRootFolder();
+		if (absoluteCheckpointsFolderPath === null) {
 			return false;
 		}
 
+		const relativeConfigPath = this.getCustomJupyterConfigFileRelativePath();
+
 		// Prepare the content to put into the configuration file
-		const configContent = `c.FileContentsManager.checkpoints_kwargs = {'root_dir': r'C:\Users\maeli\Documents\GitHub\obsidian-jupyter\test-vault\.obsidian\plugins\jupyter\.checkpoints'}
+		const configContent = `c.FileContentsManager.checkpoints_kwargs = {'root_dir': r'${absoluteCheckpointsFolderPath}'}
 print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loaded successfully.")`
 
 		// Write the config to the file
-		await this.app.vault.adapter.write(normalizePath(configPath), configContent);
+		await this.app.vault.adapter.write(normalizePath(relativeConfigPath), configContent);
 		return true;
 	}
 
 	private async deleteJupyterConfig() {
-		const configPath = await this.getCustomJupyterConfigFilePath();
-		if (configPath === null) {
+		const relativeConfigPath = this.getCustomJupyterConfigFileRelativePath();
+		if (relativeConfigPath === null) {
 			return;
 		}
-		await this.app.vault.adapter.remove(normalizePath(configPath));
+		await this.app.vault.adapter.remove(normalizePath(relativeConfigPath));
 	}
 
 	async onunload() {
