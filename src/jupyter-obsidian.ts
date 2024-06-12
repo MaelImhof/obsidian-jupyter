@@ -124,9 +124,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private async toggleJupyter() {
+	public async toggleJupyter() {
 		switch (this.env.getStatus()) {
 			case JupyterEnvironmentStatus.EXITED:
+				if (this.settings.deleteCheckpoints && !await this.customJupyterConfigExists()) {
+					await this.generateJupyterConfig();
+				}
 				this.env.start();
 				break;
 			case JupyterEnvironmentStatus.RUNNING:
@@ -327,6 +330,21 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			return null;
 		}
+	}
+
+	/**
+	 * Indicates whether the Jupyter configuration file exists (true) or
+	 * needs to be created (false).
+	 */
+	private async customJupyterConfigExists(): Promise<boolean> {
+		// Get the path to the configuration file
+		const relativeConfigPath = this.getCustomJupyterConfigFileRelativePath();
+		if (relativeConfigPath === null) {
+			return false;
+		}
+
+		// Check if the file exists
+		return await this.app.vault.adapter.exists(normalizePath(relativeConfigPath));
 	}
 
 	/**

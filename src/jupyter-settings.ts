@@ -77,21 +77,12 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED)
                     .onChange(((value: boolean) => {
-                        switch (this.plugin.env.getStatus()) {
-                            case JupyterEnvironmentStatus.STARTING:
-                                toggle.setValue(true);
-                                new Notice("Can't change status while Jupyter server is starting.");
-                                break;
-                            case JupyterEnvironmentStatus.RUNNING:
-                                if (!value) {
-                                    this.plugin.env.exit();
-                                }
-                                break;
-                            case JupyterEnvironmentStatus.EXITED:
-                                if (value) {
-                                    this.plugin.env.start();
-                                }
-                                break;
+                        if (this.plugin.env.getStatus() === JupyterEnvironmentStatus.STARTING && !value) {
+                            toggle.setValue(true);
+                            new Notice("Can't change status while Jupyter server is starting.");
+                        }
+                        else {
+                            this.plugin.toggleJupyter();
                         }
                     }).bind(this))
             ).bind(this));
