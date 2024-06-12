@@ -100,7 +100,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
 		if (value) {
-			this.env.setCheckpointsPath(await this.getCustomJupyterConfigPath());
+			this.env.setCheckpointsPath(await this.getCustomJupyterConfigFolderPath());
 		}
 		else {
 			this.env.setCheckpointsPath(null);
@@ -269,7 +269,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
-	private async getCustomJupyterConfigPath(): Promise<string|null> {
+	private async getCustomJupyterConfigFolderPath(): Promise<string|null> {
 		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
 		if (this.app.vault.adapter instanceof FileSystemAdapter) {
 			// If the path to the plugin's folder is set, use it
@@ -292,6 +292,19 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	private async getCustomJupyterConfigFilePath(): Promise<string|null> {
+		const folderPath = await this.getCustomJupyterConfigFolderPath();
+		if (folderPath === null) {
+			return null;
+		}
+		return folderPath + this.getCustomJupyterConfigFilename();
+	
+	}
+
+	private getCustomJupyterConfigFilename(): string {
+		return "jupyter_lab_config.py";
+	}
+
 	/**
 	 * Generates a Jupyter configuration file in the folder indicated by
 	 * `getCustomJupyterConfigPath()` with settings to put all checkpoints
@@ -302,7 +315,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loaded successfully.")`
 		// Write the config to the file
 		await this.app.vault.adapter.write(
-			await this.getCustomJupyterConfigPath() + "jupyter_lab_config.py",
+			await this.getCustomJupyterConfigFolderPath() + this.getCustomJupyterConfigFilename(),
 			configContent
 		);
 	}
