@@ -326,6 +326,14 @@ print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loade
 		return true;
 	}
 
+	private async deleteJupyterConfig() {
+		const configPath = await this.getCustomJupyterConfigFilePath();
+		if (configPath === null) {
+			return;
+		}
+		await this.app.vault.adapter.remove(normalizePath(configPath));
+	}
+
 	async onunload() {
 		await this.saveSettings();
 		// Kill the Jupyter Notebook process
