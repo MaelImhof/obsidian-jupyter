@@ -1,6 +1,7 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
+import { JupyterModal } from "./jupyter-modal";
 
 export enum PythonExecutableType {
     PYTHON = "python",
@@ -116,6 +117,33 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.deleteCheckpoints)
                     .onChange((async (value: boolean) => {
                         await this.plugin.setDeleteCheckpoints(value);
+
+                        if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
+                            new JupyterModal(
+                                this.app,
+                                "Jupyter restart needed",
+                                [
+                                    "You just changed the 'Delete Jupyter checkpoints' setting.",
+                                    "To apply this change, you need to restart Jupyter. Note that restarting Jupyter could cause you to lose your current work if you have not saved it.",
+                                    "Do you want to restart Jupyter now?"
+                                ],
+                                [
+                                    {
+                                        text: "No, restart later",
+                                        onClick: () => { },
+                                        closeOnClick: true
+                                    },
+                                    {
+                                        // Test comment
+                                        text: "Yes, restart now",
+                                        onClick: (async () => {
+                                            await this.plugin.restartJupyter();
+                                        }).bind(this),
+                                        closeOnClick: true
+                                    }
+                                ]
+                            ).open();
+                        }
                     }).bind(this))
             }).bind(this));
         new Setting(this.containerEl)

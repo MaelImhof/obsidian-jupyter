@@ -139,6 +139,24 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * Restarts the Jupyter server if it is running.
+	 * 
+	 * If Jupyter is not running, it is simply started.
+	 */
+	public async restartJupyter() {
+		// If the 
+		if (this.env.getStatus() === JupyterEnvironmentStatus.EXITED) {
+			this.toggleJupyter();
+		}
+		else {
+			this.env.once(JupyterEnvironmentEvent.EXIT, (() => {
+				this.toggleJupyter();
+			}).bind(this));
+			this.env.exit();
+		}
+	}
+
 	private showStatusMessage() {
 		if (!this.settings.useStatusNotices) {
 			return;
@@ -239,15 +257,15 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private async onJupyterExit(_env: JupyterEnvironment) {
-		if (this.settings.deleteCheckpoints) {
-			// If the setting is enabled, purge the checkpoint folders
-			const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
-			if (this.settings.moveCheckpointsToTrash) {
-				this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
-			}
-			else {
-				this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
-			}
+		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
+		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
+			// Even if the setting is disabled, we do not want to keep the
+			// special checkpoints folder around, but we move it to the bin so
+			// that it is still recoverable.
+			this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
+		}
+		else {
+			this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
 		}
 	}
 
