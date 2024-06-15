@@ -7,6 +7,8 @@ import { JupyterModal } from "./jupyter-modal";
 export default class JupyterNotebookPlugin extends Plugin {
 
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
+	private ribbonIcon: HTMLElement|null = null;
+
 	public readonly env: JupyterEnvironment = new JupyterEnvironment(
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
 		DEFAULT_SETTINGS.debugConsole,
@@ -15,7 +17,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 		DEFAULT_SETTINGS.jupyterEnvType,
 		null
 	);
-	private ribbonIcon: HTMLElement|null = null;
+	private envProperlyInitialized = false;
+	private startEnvOnceInitialized = false;
 
     async onload() {
 		await this.loadSettings();
@@ -24,12 +27,16 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
 		this.env.setType(this.settings.jupyterEnvType);
 		if (this.settings.deleteCheckpoints) {
-			this.env.setCustomConfigFolderPath(this.getCheckpointsAbsoluteRootFolder());
+			this.env.setCustomConfigFolderPath(this.getCustomJupyterConfigFolderPath());
 		}
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
 		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
 		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
 		this.env.on(JupyterEnvironmentEvent.EXIT, this.onJupyterExit.bind(this));
+		this.envProperlyInitialized = true;
+		if (this.startEnvOnceInitialized) {
+			this.toggleJupyter();
+		}
 		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
@@ -101,11 +108,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.deleteCheckpoints = value;
 		await this.saveSettings();
 		if (value) {
-			this.generateJupyterConfig();
+			await this.generateJupyterConfig();
 			this.env.setCustomConfigFolderPath(this.getCustomJupyterConfigFolderPath());
 		}
 		else {
-			this.deleteJupyterConfig();
+			await this.deleteJupyterConfig();
 			this.env.setCustomConfigFolderPath(null);
 		}
 	}
@@ -126,6 +133,14 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	public async toggleJupyter() {
+		// If the environment is not properly initialized, it cannot be started
+		// This case can occur when the plugin is loading while views are also being loaded,
+		// and one of them requests Jupyter to be started.
+		if (!this.envProperlyInitialized) {
+			this.startEnvOnceInitialized = true;
+			return;
+		}
+
 		switch (this.env.getStatus()) {
 			case JupyterEnvironmentStatus.EXITED:
 				if (this.settings.deleteCheckpoints && !await this.customJupyterConfigExists()) {
@@ -257,6 +272,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private async onJupyterExit(_env: JupyterEnvironment) {
+		await this.purgeJupyterCheckpoints();
+	}
+
+	private async purgeJupyterCheckpoints() {
 		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
 		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
 			// Even if the setting is disabled, we do not want to keep the
@@ -418,5 +437,6 @@ print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loade
 		await this.saveSettings();
 		// Kill the Jupyter Notebook process
 		this.env.exit();
+		await this.purgeJupyterCheckpoints();
 	}
 }

@@ -91,7 +91,7 @@ export class JupyterEnvironment {
         if (this.customConfigFolderPath !== null) {
             env = {
                 ...process.env,
-                JUPYTER_CONFIG_PATH: `${this.customConfigFolderPath}${path_delimiter}${process.env.JUPYTER_CONFIG_PATH}`
+                JUPYTER_CONFIG_PATH: `${this.customConfigFolderPath}${process.env.JUPYTER_CONFIG_PATH ? path_delimiter + process.env.JUPYTER_CONFIG_PATH : ""}`
             };
         }
 
