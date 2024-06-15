@@ -1,6 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
 import { Debouncer, debounce } from "obsidian";
+import { delimiter as path_delimiter } from "path";
 
 export enum JupyterEnvironmentType {
     NOTEBOOK = "notebook",
@@ -41,11 +42,13 @@ export enum JupyterEnvironmentError {
     NONE = "No error was encountered.",
     UNABLE_TO_START_JUPYTER = "Jupyter process could not be spawned.",
     JUPYTER_EXITED_WITH_ERROR = "Jupyter process crashed.",
+    JUPYTER_EXITED_WITHOUT_ERROR = "Jupyter process exited.",
     JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
 export class JupyterEnvironment {
     private jupyterProcess: ChildProcessWithoutNullStreams|null = null;
+    private jupyterLog: string[] = [];
     private jupyterPort: number|null = null;
     private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
@@ -57,7 +60,7 @@ export class JupyterEnvironment {
     private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
     private jupyerTimedOut: boolean = false;
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType) { }
+    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType, private customConfigFolderPath: string|null) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -80,9 +83,22 @@ export class JupyterEnvironment {
             return;
         }
 
+        // Reset the saved logs.
+        this.jupyterLog = [];
+
+        // Prepare the environment variables
+        let env = undefined;
+        if (this.customConfigFolderPath !== null) {
+            env = {
+                ...process.env,
+                JUPYTER_CONFIG_PATH: `${this.customConfigFolderPath}${process.env.JUPYTER_CONFIG_PATH ? path_delimiter + process.env.JUPYTER_CONFIG_PATH : ""}`
+            };
+        }
+
         try {
             this.jupyterProcess = spawn(this.pythonExecutable, ["-m", this.type === JupyterEnvironmentType.NOTEBOOK ? "notebook" : "jupyterlab", "--no-browser"], {
-                cwd: this.path
+                cwd: this.path,
+                env: env
             });
         }
         catch (e) {
@@ -115,6 +131,7 @@ export class JupyterEnvironment {
 
     private processJupyterOutput(data: string) {
         data = data.toString();
+        this.jupyterLog.push(data);
         if (this.printDebug) {
             console.debug(data.toString());
         }
@@ -156,6 +173,14 @@ export class JupyterEnvironment {
         }
     }
 
+    public setCustomConfigFolderPath(value: string|null) {
+        this.customConfigFolderPath = value;
+    }
+
+    public getCustomConfigFolderPath(): string|null {
+        return this.customConfigFolderPath;
+    }
+
     public getJupyterTimeoutMs(): number {
         return this.jupyterTimeoutMs;
     }
@@ -174,6 +199,18 @@ export class JupyterEnvironment {
 
     public getToken(): string|null {
         return this.jupyterToken;
+    }
+
+    public getLog(): string[] {
+        return this.jupyterLog;
+    }
+
+    public getLastLog(): string {
+        if (this.jupyterLog.length === 0) {
+            return "";
+        }
+
+        return this.jupyterLog[this.jupyterLog.length - 1];
     }
 
     /**
@@ -204,6 +241,9 @@ export class JupyterEnvironment {
         else if (this.jupyerTimedOut) {
             this.jupyerTimedOut = false;
             this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT);
+        }
+        else if (this.status === JupyterEnvironmentStatus.STARTING) {
+            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITHOUT_ERROR);
         }
 
         this.jupyterProcess = null;
