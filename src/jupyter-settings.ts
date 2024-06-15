@@ -1,6 +1,8 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
+import { JupyterModal } from "./ui/jupyter-modal";
+import { JupyterRestartModal } from "./ui/jupyter-restart-modal";
 
 export enum PythonExecutableType {
     PYTHON = "python",
@@ -8,24 +10,28 @@ export enum PythonExecutableType {
 }
 
 export interface JupyterSettings {
+    pythonExecutable: PythonExecutableType;
+    pythonExecutablePath: string;
+    startJupyterAuto: boolean;
+    jupyterEnvType: JupyterEnvironmentType;
+    deleteCheckpoints: boolean;
+    moveCheckpointsToTrash: boolean;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
+    jupyterTimeoutMs: number;
     debugConsole: boolean;
-    startJupyterAuto: boolean;
-    pythonExecutablePath: string,
-    pythonExecutable: PythonExecutableType,
-    jupyterTimeoutMs: number,
-    jupyterEnvType: JupyterEnvironmentType
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
+    pythonExecutable: PythonExecutableType.PYTHON,
+    pythonExecutablePath: "",
+    startJupyterAuto: true,
+    jupyterEnvType: JupyterEnvironmentType.LAB,
+    deleteCheckpoints: false,
+    moveCheckpointsToTrash: true,
     displayRibbonIcon: true,
     useStatusNotices: true,
-    debugConsole: false,
-    startJupyterAuto: true,
-    pythonExecutablePath: "",
-    pythonExecutable: PythonExecutableType.PYTHON,
     jupyterTimeoutMs: 30000,
-    jupyterEnvType: JupyterEnvironmentType.LAB
+    debugConsole: false
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -35,7 +41,12 @@ export class JupyterSettingsTab extends PluginSettingTab {
 
     display() {
         this.containerEl.empty();
-        
+
+
+        /*=====================================================*/
+	    /* Python settings                                     */
+	    /*=====================================================*/
+
         new Setting(this.containerEl)
             .setName("Python")
             .setHeading();
@@ -63,6 +74,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this));
             }).bind(this));
 
+
+        /*=====================================================*/
+	    /* Jupyter settings                                    */
+	    /*=====================================================*/
+
         new Setting(this.containerEl)
             .setName("Jupyter")
             .setHeading();
@@ -73,21 +89,12 @@ export class JupyterSettingsTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED)
                     .onChange(((value: boolean) => {
-                        switch (this.plugin.env.getStatus()) {
-                            case JupyterEnvironmentStatus.STARTING:
-                                toggle.setValue(true);
-                                new Notice("Can't change status while Jupyter server is starting.");
-                                break;
-                            case JupyterEnvironmentStatus.RUNNING:
-                                if (!value) {
-                                    this.plugin.env.exit();
-                                }
-                                break;
-                            case JupyterEnvironmentStatus.EXITED:
-                                if (value) {
-                                    this.plugin.env.start();
-                                }
-                                break;
+                        if (this.plugin.env.getStatus() === JupyterEnvironmentStatus.STARTING && !value) {
+                            toggle.setValue(true);
+                            new Notice("Can't change status while Jupyter server is starting.");
+                        }
+                        else {
+                            this.plugin.toggleJupyter();
                         }
                     }).bind(this))
             ).bind(this));
@@ -111,8 +118,41 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.jupyterEnvType)
                     .onChange((async (value: JupyterEnvironmentType) => {
                         await this.plugin.setJupyterEnvType(value);
+
+                        if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
+                            new JupyterRestartModal(this.plugin, "Jupyter environment type").open();
+                        }
                     }).bind(this));
             }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Delete Jupyter checkpoints")
+            .setDesc("To keep your Obsidian vault clean. Does not work retroactively. Restarting Jupyter is required for the setting to take effect.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.deleteCheckpoints)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setDeleteCheckpoints(value);
+
+                        if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
+                            new JupyterRestartModal(this.plugin, "Delete Jupyter checkpoints").open();
+                        }
+                    }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Move Jupyter checkpoints to trash")
+            .setDesc("Has no effect if 'Delete Jupyter checkpoints' is not enabled. If enabled, checkpoints are moved to system trash. Otherwise, they are permanently deleted.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.moveCheckpointsToTrash)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setMoveCheckpointsToTrash(value);
+                    }).bind(this))
+            }).bind(this));
+
+
+        /*=====================================================*/
+	    /* Plugin customization settings                       */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Plugin customization")
@@ -137,6 +177,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+
+
+        /*=====================================================*/
+	    /* Advanced settings                                   */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Advanced")

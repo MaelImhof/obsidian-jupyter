@@ -34,6 +34,24 @@ Whether to use Jupyter Lab or Jupyter Notebook.
 Note that if the Jupyter server is running while you change this setting, you will need to stop it and start it again for the new value to take effect.
 
 Default value is Jupyter Lab.
+#### Delete Jupyter checkpoints
+
+When working with notebooks, Jupyter generates checkpoint files. This creates a new `.ipynb_checkpoints` directory in each directory where you have a notebook opened. It becomes messy very fast.
+
+This setting helps you keeping your vault clean. If enabled, checkpoints will be deleted automatically.
+
+The deletion does not work retroactively though, meaning that if checkpoints were created before you enable the feature, they won't be deleted. The setting only applies to future checkpoints.
+
+Note that if the Jupyter server is running while you change this setting, you will need to stop it and start it again for the new value to take effect.
+
+This setting is disabled by default.
+#### Move Jupyter checkpoints to trash
+
+If enabled, Jupyter checkpoints will be moved to the system trash instead of being permanently deleted. This can be useful if you want to still make sure you can always restore checkpoints.
+
+This setting has no effect if [[#Delete Jupyter checkpoints]] is disabled.
+
+By default, Jupyter checkpoints are moved to trash (enabled).
 ### Plugin customization
 #### Display ribbon icon
 

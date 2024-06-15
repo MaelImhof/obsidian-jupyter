@@ -1,13 +1,12 @@
 import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from "obsidian";
-import JupyterNotebookPlugin from "./jupyter-obsidian";
-import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
+import JupyterNotebookPlugin from "../jupyter-obsidian";
+import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "../jupyter-env";
 import { JupyterModalButton } from "./jupyter-modal";
 
 export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
 export class EmbeddedJupyterView extends FileView {
 
-    private readonly runningEventListener = this.onJupyterRunning.bind(this);
     private readonly changeEventListener = this.onJupyterEnvironmentStatusChange.bind(this);
 
     private openedFile: TFile | null = null;
@@ -63,7 +62,7 @@ export class EmbeddedJupyterView extends FileView {
             case JupyterEnvironmentStatus.EXITED:
                 if (this.plugin.settings.startJupyterAuto) {
                     this.displayExitMessage();
-                    this.plugin.env.start();
+                    this.plugin.toggleJupyter();
                 }
                 else {
                     this.displayMessage("No Jupyter server", "Jupyter does not seem to be running. Please make sure to start the server manually using the plugin's ribbon icon or settings. You can also enable automatic start of the Jupyter server when a document is opened in the settings.");

@@ -23,8 +23,8 @@ Now, the idea must be translated to a working system. Since it is an Obsidian pl
 This general system architecture was translated into TypeScript code as follows.
 
 1. The **`jupyter-env.ts`** file is the backend of the plugin. It starts and stops the Jupyter environment and provide event callbacks when the server starts, exits or encounters an error. It knows the Jupyter token and port in order to access files.
-2. The **`jupyter-view.ts`** file is the Jupyter file view that allows Obsidian to render `.ipynb` files.
-3. The **`jupyter-modal.ts`** file is a dialog window used to display error messages when need be. Other UI tweaks are contained in `jupyter-obsidian.ts` (notices, ribbon icon).
+2. The **`ui/jupyter-view.ts`** file is the Jupyter file view that allows Obsidian to render `.ipynb` files.
+3. The **`ui/jupyter-modal.ts`** file is a dialog window used to display error messages when need be. `ui/jupyter-restart-modal.ts` is a specific case of modal that is displayed when a change in the settings requires Jupyter to restart to take effect. Other UI tweaks are contained in `jupyter-obsidian.ts` (notices, ribbon icon).
 4. The **`jupyter-settings.ts`** defines the settings type of the plugin but also its settings page.
 5. Finally, the **`jupyter-obsidian.ts`** contains the common main plugin class of Obsidian plugins, and puts everything together. It registers the custom view, the settings page, a ribbon icon. It displays messages when the server changes state or when there is an error.
 ## Specific Documentation
