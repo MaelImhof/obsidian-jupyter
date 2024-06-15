@@ -11,11 +11,9 @@ const config: QuartzConfig = {
     pageTitle: "Jupyter for Obsidian",
     enableSPA: true,
     enablePopovers: true,
-    analytics: {
-      provider: "plausible",
-    },
+    analytics: null,
     locale: "en-US",
-    baseUrl: "maelimhof.github.io/obsidian-jupyter",
+    baseUrl: "jupyter.mael.im",
     ignorePatterns: [".obsidian"],
     defaultDateType: "created",
     theme: {

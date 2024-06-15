@@ -10,8 +10,7 @@ export const sharedPageComponents: SharedLayout = {
       Troubleshooting: "/troubleshooting",
       GitHub: "https://github.com/MaelImhof/obsidian-jupyter",
       Issues: "https://github.com/MaelImhof/obsidian-jupyter/issues/",
-      Discord: "https://discord.gg/KgkwwRJ3mQ",
-      "Obsidian Forum": "https://forum.obsidian.md/t/jupyter-notebook-integration-for-obsidian/4951/40"
+      Discord: "https://discord.gg/KgkwwRJ3mQ"
     },
   }),
 }
