@@ -126,7 +126,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
             }).bind(this));
         new Setting(this.containerEl)
             .setName("Delete Jupyter checkpoints")
-            .setDesc("Jupyter automatically generates checkpoints when you are editing your notebooks. Those can get your vault messy. Enabling this setting will prevent new checkpoints from appearing, but does not work retroactively. You will need to start Jupyter again for this setting to take effect.")
+            .setDesc("To keep your Obsidian vault clean. Does not work retroactively. Restarting Jupyter is required for the setting to take effect.")
             .addToggle(((toggle: ToggleComponent) => {
                 toggle
                     .setValue(this.plugin.settings.deleteCheckpoints)
@@ -140,7 +140,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
             }).bind(this));
         new Setting(this.containerEl)
             .setName("Move Jupyter checkpoints to trash")
-            .setDesc("Has no effect if 'Delete Jupyter checkpoints' is not enabled. Instead of deleting the checkpoints, they will be moved to the system trash. This can be useful if you want to keep a be able to restore some checkpoints.")
+            .setDesc("Has no effect if 'Delete Jupyter checkpoints' is not enabled. If enabled, checkpoints are moved to system trash. Otherwise, they are permanently deleted.")
             .addToggle(((toggle: ToggleComponent) => {
                 toggle
                     .setValue(this.plugin.settings.moveCheckpointsToTrash)
