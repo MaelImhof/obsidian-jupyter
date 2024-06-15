@@ -2,6 +2,7 @@ import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderCompon
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { JupyterModal } from "./ui/jupyter-modal";
+import { JupyterRestartModal } from "./ui/jupyter-restart-modal";
 
 export enum PythonExecutableType {
     PYTHON = "python",
@@ -117,6 +118,10 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.jupyterEnvType)
                     .onChange((async (value: JupyterEnvironmentType) => {
                         await this.plugin.setJupyterEnvType(value);
+
+                        if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
+                            new JupyterRestartModal(this.plugin, "Jupyter environment type").open();
+                        }
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)
@@ -129,29 +134,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setDeleteCheckpoints(value);
 
                         if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
-                            new JupyterModal(
-                                this.app,
-                                "Jupyter restart needed",
-                                [
-                                    "You just changed the 'Delete Jupyter checkpoints' setting.",
-                                    "To apply this change, you need to restart Jupyter. Note that restarting Jupyter could cause you to lose your current work if you have not saved it.",
-                                    "Do you want to restart Jupyter now?"
-                                ],
-                                [
-                                    {
-                                        text: "No, restart later",
-                                        onClick: () => { },
-                                        closeOnClick: true
-                                    },
-                                    {
-                                        text: "Yes, restart now",
-                                        onClick: (async () => {
-                                            await this.plugin.restartJupyter();
-                                        }).bind(this),
-                                        closeOnClick: true
-                                    }
-                                ]
-                            ).open();
+                            new JupyterRestartModal(this.plugin, "Delete Jupyter checkpoints").open();
                         }
                     }).bind(this))
             }).bind(this));
