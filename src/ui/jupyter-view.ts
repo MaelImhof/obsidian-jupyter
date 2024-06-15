@@ -1,6 +1,6 @@
 import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from "obsidian";
-import JupyterNotebookPlugin from "./jupyter-obsidian";
-import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "./jupyter-env";
+import JupyterNotebookPlugin from "../jupyter-obsidian";
+import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "../jupyter-env";
 import { JupyterModalButton } from "./jupyter-modal";
 
 export const JUPYTER_VIEW_TYPE = "jupyter-view";

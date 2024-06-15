@@ -1,7 +1,7 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
-import { JupyterModal } from "./jupyter-modal";
+import { JupyterModal } from "./ui/jupyter-modal";
 
 export enum PythonExecutableType {
     PYTHON = "python",

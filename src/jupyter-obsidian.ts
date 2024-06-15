@@ -1,8 +1,8 @@
 import { FileSystemAdapter, Notice, Plugin, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
-import { EmbeddedJupyterView } from "./jupyter-view";
+import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
-import { JupyterModal } from "./jupyter-modal";
+import { JupyterModal } from "./ui/jupyter-modal";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
