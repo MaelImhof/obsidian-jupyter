@@ -15,7 +15,7 @@ const config: QuartzConfig = {
       provider: "plausible",
     },
     locale: "en-US",
-    baseUrl: "maelimhof.github.io/obsidian-jupyter",
+    baseUrl: "jupyter.mael.im",
     ignorePatterns: [".obsidian"],
     defaultDateType: "created",
     theme: {
