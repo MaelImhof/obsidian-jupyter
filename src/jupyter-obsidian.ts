@@ -6,6 +6,10 @@ import { JupyterModal } from "./jupyter-modal";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
+	/*=====================================================*/
+	/* Plugin instance properties                          */
+	/*=====================================================*/
+
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
 	private ribbonIcon: HTMLElement|null = null;
 
@@ -19,6 +23,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 	);
 	private envProperlyInitialized = false;
 	private startEnvOnceInitialized = false;
+
+
+	/*=====================================================*/
+	/* Obsidian hooks (load, unload)                       */
+	/*=====================================================*/
 
     async onload() {
 		await this.loadSettings();
@@ -44,93 +53,17 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
 	}
 
-	private async loadSettings() {
-		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
+	async onunload() {
+		await this.saveSettings();
+		// Kill the Jupyter Notebook process
+		this.env.exit();
+		await this.purgeJupyterCheckpoints();
 	}
 
-	public async setRibbonIconSetting(value: boolean) {
-		this.settings.displayRibbonIcon = value;
-		await this.saveSettings();
-		if (!value) {
-			this.ribbonIcon?.remove();
-			this.ribbonIcon = null;
-		}
-		else {
-			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
-			this.updateRibbon(this.env);
-		}
-	}
 
-	public async setStatusNoticesSetting(value: boolean) {
-		this.settings.useStatusNotices = value;
-		await this.saveSettings();
-	}
-
-	public async setStartJupyterAuto(value: boolean) {
-		this.settings.startJupyterAuto = value;
-		await this.saveSettings();
-	}
-
-	public async setPythonExecutable(value: PythonExecutableType) {
-		this.settings.pythonExecutable = value;
-		await this.saveSettings();
-		switch (value) {
-			case PythonExecutableType.PYTHON:
-				this.env.setPythonExecutable("python");
-				break;
-			case PythonExecutableType.PATH:
-				this.env.setPythonExecutable(this.settings.pythonExecutablePath);
-				break;
-		}
-	}
-
-	public async setPythonExecutablePath(value: string) {
-		this.settings.pythonExecutablePath = value;
-		await this.saveSettings();
-		if (this.settings.pythonExecutable === PythonExecutableType.PATH) {
-			this.env.setPythonExecutable(value);
-		}
-	}
-
-	public async setJupyterTimeoutMs(value: number) {
-		this.settings.jupyterTimeoutMs = value;
-		await this.saveSettings();
-		this.env.setJupyterTimeoutMs(value);
-	}
-
-	public async setJupyterEnvType(value: JupyterEnvironmentType) {
-		this.settings.jupyterEnvType = value;
-		await this.saveSettings();
-		this.env.setType(value);
-	}
-
-	public async setDeleteCheckpoints(value: boolean) {
-		this.settings.deleteCheckpoints = value;
-		await this.saveSettings();
-		if (value) {
-			await this.generateJupyterConfig();
-			this.env.setCustomConfigFolderPath(this.getCustomJupyterConfigFolderPath());
-		}
-		else {
-			await this.deleteJupyterConfig();
-			this.env.setCustomConfigFolderPath(null);
-		}
-	}
-	
-	public async setMoveCheckpointsToTrash(value: boolean) {
-		this.settings.moveCheckpointsToTrash = value;
-		await this.saveSettings();
-	}
-
-	public async setDebugConsole(value: boolean) {
-		this.settings.debugConsole = value;
-		await this.saveSettings();
-		this.env.printDebugMessages(this.settings.debugConsole);
-	}
-
-	public async saveSettings() {
-		await this.saveData(this.settings);
-	}
+	/*=====================================================*/
+	/* UI Events (ribbon icon, server setting)             */
+	/*=====================================================*/
 
 	public async toggleJupyter() {
 		// If the environment is not properly initialized, it cannot be started
@@ -160,7 +93,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 * If Jupyter is not running, it is simply started.
 	 */
 	public async restartJupyter() {
-		// If the 
 		if (this.env.getStatus() === JupyterEnvironmentStatus.EXITED) {
 			this.toggleJupyter();
 		}
@@ -171,6 +103,104 @@ export default class JupyterNotebookPlugin extends Plugin {
 			this.env.exit();
 		}
 	}
+
+
+	/*=====================================================*/
+	/* Settings (load, save, set values)                   */
+	/*=====================================================*/
+
+	private async loadSettings() {
+		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	public async setPythonExecutable(value: PythonExecutableType) {
+		this.settings.pythonExecutable = value;
+		await this.saveSettings();
+		switch (value) {
+			case PythonExecutableType.PYTHON:
+				this.env.setPythonExecutable("python");
+				break;
+			case PythonExecutableType.PATH:
+				this.env.setPythonExecutable(this.settings.pythonExecutablePath);
+				break;
+		}
+	}
+
+	public async setPythonExecutablePath(value: string) {
+		this.settings.pythonExecutablePath = value;
+		await this.saveSettings();
+		if (this.settings.pythonExecutable === PythonExecutableType.PATH) {
+			this.env.setPythonExecutable(value);
+		}
+	}
+
+	public async setStartJupyterAuto(value: boolean) {
+		this.settings.startJupyterAuto = value;
+		await this.saveSettings();
+	}
+
+	public async setJupyterEnvType(value: JupyterEnvironmentType) {
+		this.settings.jupyterEnvType = value;
+		await this.saveSettings();
+		this.env.setType(value);
+	}
+
+	public async setDeleteCheckpoints(value: boolean) {
+		this.settings.deleteCheckpoints = value;
+		await this.saveSettings();
+		if (value) {
+			await this.generateJupyterConfig();
+			this.env.setCustomConfigFolderPath(this.getCustomJupyterConfigFolderPath());
+		}
+		else {
+			await this.deleteJupyterConfig();
+			this.env.setCustomConfigFolderPath(null);
+		}
+	}
+	
+	public async setMoveCheckpointsToTrash(value: boolean) {
+		this.settings.moveCheckpointsToTrash = value;
+		await this.saveSettings();
+	}
+
+	public async setRibbonIconSetting(value: boolean) {
+		this.settings.displayRibbonIcon = value;
+		await this.saveSettings();
+		if (!value) {
+			this.ribbonIcon?.remove();
+			this.ribbonIcon = null;
+		}
+		else {
+			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+			this.updateRibbon(this.env);
+		}
+	}
+
+	public async setStatusNoticesSetting(value: boolean) {
+		this.settings.useStatusNotices = value;
+		await this.saveSettings();
+	}
+
+	public async setJupyterTimeoutMs(value: number) {
+		this.settings.jupyterTimeoutMs = value;
+		await this.saveSettings();
+		this.env.setJupyterTimeoutMs(value);
+	}
+
+	public async setDebugConsole(value: boolean) {
+		this.settings.debugConsole = value;
+		await this.saveSettings();
+		this.env.printDebugMessages(this.settings.debugConsole);
+	}
+
+	public async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+
+	/*=====================================================*/
+	/* Jupyter Environment event (on change, error, exit)  */
+	/*=====================================================*/
 
 	private showStatusMessage() {
 		if (!this.settings.useStatusNotices) {
@@ -271,23 +301,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
-	private async onJupyterExit(_env: JupyterEnvironment) {
-		await this.purgeJupyterCheckpoints();
-	}
-
-	private async purgeJupyterCheckpoints() {
-		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
-		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
-			// Even if the setting is disabled, we do not want to keep the
-			// special checkpoints folder around, but we move it to the bin so
-			// that it is still recoverable.
-			this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
-		}
-		else {
-			this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
-		}
-	}
-
 	private async updateRibbon(env: JupyterEnvironment) {
 		if (this.ribbonIcon === null || !this.settings.displayRibbonIcon) {
 			return;
@@ -306,6 +319,28 @@ export default class JupyterNotebookPlugin extends Plugin {
 				setIcon(this.ribbonIcon as HTMLElement, "monitor-play");
 				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
+		}
+	}
+
+	private async onJupyterExit(_env: JupyterEnvironment) {
+		await this.purgeJupyterCheckpoints();
+	}
+
+
+	/*=====================================================*/
+	/* Jupyter checkpoints management                      */
+	/*=====================================================*/
+
+	private async purgeJupyterCheckpoints() {
+		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
+		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
+			// Even if the setting is disabled, we do not want to keep the
+			// special checkpoints folder around, but we move it to the bin so
+			// that it is still recoverable.
+			this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
+		}
+		else {
+			this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
 		}
 	}
 
@@ -431,12 +466,5 @@ print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loade
 			return;
 		}
 		await this.app.vault.adapter.remove(normalizePath(relativeConfigPath));
-	}
-
-	async onunload() {
-		await this.saveSettings();
-		// Kill the Jupyter Notebook process
-		this.env.exit();
-		await this.purgeJupyterCheckpoints();
 	}
 }

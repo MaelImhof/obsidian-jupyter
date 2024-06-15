@@ -9,28 +9,28 @@ export enum PythonExecutableType {
 }
 
 export interface JupyterSettings {
-    displayRibbonIcon: boolean;
-    useStatusNotices: boolean;
-    debugConsole: boolean;
+    pythonExecutable: PythonExecutableType;
+    pythonExecutablePath: string;
     startJupyterAuto: boolean;
+    jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
-    pythonExecutablePath: string,
-    pythonExecutable: PythonExecutableType,
-    jupyterTimeoutMs: number,
-    jupyterEnvType: JupyterEnvironmentType
+    displayRibbonIcon: boolean;
+    useStatusNotices: boolean;
+    jupyterTimeoutMs: number;
+    debugConsole: boolean;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
-    displayRibbonIcon: true,
-    useStatusNotices: true,
-    debugConsole: false,
+    pythonExecutable: PythonExecutableType.PYTHON,
+    pythonExecutablePath: "",
     startJupyterAuto: true,
+    jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
-    pythonExecutablePath: "",
-    pythonExecutable: PythonExecutableType.PYTHON,
+    displayRibbonIcon: true,
+    useStatusNotices: true,
     jupyterTimeoutMs: 30000,
-    jupyterEnvType: JupyterEnvironmentType.LAB
+    debugConsole: false
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -40,7 +40,12 @@ export class JupyterSettingsTab extends PluginSettingTab {
 
     display() {
         this.containerEl.empty();
-        
+
+
+        /*=====================================================*/
+	    /* Python settings                                     */
+	    /*=====================================================*/
+
         new Setting(this.containerEl)
             .setName("Python")
             .setHeading();
@@ -67,6 +72,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setPythonExecutablePath(value);
                     }).bind(this));
             }).bind(this));
+
+
+        /*=====================================================*/
+	    /* Jupyter settings                                    */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Jupyter")
@@ -134,7 +144,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                                         closeOnClick: true
                                     },
                                     {
-                                        // Test comment
                                         text: "Yes, restart now",
                                         onClick: (async () => {
                                             await this.plugin.restartJupyter();
@@ -156,6 +165,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setMoveCheckpointsToTrash(value);
                     }).bind(this))
             }).bind(this));
+
+
+        /*=====================================================*/
+	    /* Plugin customization settings                       */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Plugin customization")
@@ -180,6 +194,11 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setStatusNoticesSetting(value);
                     }).bind(this))
             ).bind(this));
+
+
+        /*=====================================================*/
+	    /* Advanced settings                                   */
+	    /*=====================================================*/
 
         new Setting(this.containerEl)
             .setName("Advanced")
