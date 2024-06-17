@@ -1,3 +1,7 @@
+# =========================
+# Generic
+# =========================
+
 # vscode
 .vscode 
 
@@ -8,29 +12,52 @@
 # npm
 node_modules
 
-# Don't include the compiled main.js file in the repo.
-# They should be uploaded to GitHub releases instead.
-main.js
-!test-vault/.obsidian/plugins/hot-reload/main.js
-
-# Don't include the generate Jupyter configuration file
-test-vault/.obsidian/plugins/jupyter/jupyter_lab_config.py
+# Exclude macOS Finder (System Explorer) View States
+.DS_Store
 
 # Exclude sourcemaps
 *.map
 
-# obsidian
+# =========================
+# Docs
+# =========================
+
+# Exclude generated docs
+docs/public
+docs/quartz/.quartz-cache
+
+# =========================
+# Obsidian
+# =========================
+
+# Do not include generic Obsidian files
 app.json
 appearance.json
 core-plugins.json
 core-plugins-migration.json
 workspace.json
+
+# Do not include plugins settings
 data.json
+
+# Ignore files that are copied by npm run build
+main.js
 styles.css
 manifest.json
 versions.json
-!test-obsidian-vault/.obsidian/plugins/hot-reload/main.js
-.ipynb_checkpoints
 
-# Exclude macOS Finder (System Explorer) View States
-.DS_Store
+# But include the hot-reload plugin's files
+!test-vault/.obsidian/plugins/hot-reload/main.js
+!test-vault/.obsidian/plugins/hot-reload/manifest.json
+!test-vault/.obsidian/plugins/hot-reload/LICENSE
+
+# Also include the styles, manifest and versions in the test vault
+!test-vault/.obsidian/plugins/jupyter/styles.css
+!test-vault/.obsidian/plugins/jupyter/manifest.json
+!test-vault/.obsidian/plugins/jupyter/versions.json
+
+# Ignore the generate Jupyter configuration file
+test-vault/.obsidian/plugins/jupyter/jupyter_lab_config.py
+
+# Ignore the generated Jupyter checkpoints
+.ipynb_checkpoints
