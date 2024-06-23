@@ -449,7 +449,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 */
 	private async generateJupyterConfig(): Promise<boolean> {
 		// Then retrieve the path to the checkpoints folder
-		const absoluteCheckpointsFolderPath = this.getCheckpointsAbsoluteRootFolder();
+		const absoluteCheckpointsFolderPath =
+			this.settings.checkpointsFolder == ""
+			? this.getCheckpointsAbsoluteRootFolder()
+			: this.settings.checkpointsFolder;
 		if (absoluteCheckpointsFolderPath === null) {
 			return false;
 		}

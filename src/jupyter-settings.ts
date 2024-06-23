@@ -152,7 +152,7 @@ export class JupyterSettingsTab extends PluginSettingTab {
             }).bind(this));
         new Setting(this.containerEl)
             .setName("Jupyter checkpoints folder")
-            .setDesc("The root folder for all Jupyter checkpoints. Leave empty for default. Has no effect if 'Delete Jupyter checkpoints' is not enabled.")
+            .setDesc("The root folder for all Jupyter checkpoints. Leave empty for default. Requires restarting Jupyter to take effect. Has no effect if 'Delete Jupyter checkpoints' is not enabled.")
             .addText(((text: TextComponent) => {
                 text
                     .setPlaceholder(this.plugin.getCheckpointsAbsoluteRootFolder() ?? "No default path available")
