@@ -16,6 +16,7 @@ export interface JupyterSettings {
     jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
+    checkpointsFolder: string;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
@@ -28,6 +29,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
+    checkpointsFolder: "",
     displayRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
@@ -147,6 +149,17 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .onChange((async (value: boolean) => {
                         await this.plugin.setMoveCheckpointsToTrash(value);
                     }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Jupyter checkpoints folder")
+            .setDesc("The root folder for all Jupyter checkpoints. Leave empty for default. Has no effect if 'Delete Jupyter checkpoints' is not enabled.")
+            .addText(((text: TextComponent) => {
+                text
+                    .setPlaceholder(this.plugin.getCheckpointsAbsoluteRootFolder() ?? "No default path available")
+                    .setValue(this.plugin.settings.checkpointsFolder)
+                    .onChange((async (value: string) => {
+                        await this.plugin.setCheckpointsFolder(value);
+                    }).bind(this));
             }).bind(this));
 
 

@@ -163,6 +163,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
+	public async setCheckpointsFolder(value: string) {
+		this.settings.checkpointsFolder = value;
+		await this.saveSettings();
+	}
+
 	public async setRibbonIconSetting(value: boolean) {
 		this.settings.displayRibbonIcon = value;
 		await this.saveSettings();
@@ -356,7 +361,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 * 
 	 * Ends with a trailing '/'.
 	 */
-	private getCheckpointsAbsoluteRootFolder(): string|null {
+	public getCheckpointsAbsoluteRootFolder(): string|null {
 		// Since the plugin is for desktop only, we can expect a FileSystemAdapter
 		const absoluteFolderPath = this.getCustomJupyterConfigFolderPath();
 		if (absoluteFolderPath === null) {
