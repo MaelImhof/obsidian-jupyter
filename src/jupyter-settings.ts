@@ -1,7 +1,6 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
-import { JupyterModal } from "./ui/jupyter-modal";
 import { JupyterRestartModal } from "./ui/jupyter-restart-modal";
 
 export enum PythonExecutableType {
@@ -20,6 +19,9 @@ export interface JupyterSettings {
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
     debugConsole: boolean;
+
+    // These are not for the user to modify
+    knownVersion: string;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     pythonExecutable: PythonExecutableType.PYTHON,
@@ -31,7 +33,9 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     displayRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
-    debugConsole: false
+    debugConsole: false,
+
+    knownVersion: ""
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
