@@ -372,6 +372,28 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	/**
+	 * For the feature that gets rid of the Jupyter checkpoints, the
+	 * plugin uses a custom Jupyter configuration file to put all of the
+	 * checkpoints in a separate folder.
+	 * 
+	 * This function decides where the checkpoints folder will actually
+	 * be placed, taking settings into account
+	 * (unlike getCheckpointsAbsoluteRootFolder).
+	 * 
+	 * Ends with a trailing '/'.
+	 */
+	public getCheckpointsActualAbsoluteRootFolder(): string|null {
+		if (this.settings.checkpointsFolder === "") {
+			return this.getCheckpointsAbsoluteRootFolder();
+		}
+		else {
+			return this.settings.checkpointsFolder.endsWith("/")
+				? this.settings.checkpointsFolder
+				: this.settings.checkpointsFolder + "/";
+		}
+	}
+
+	/**
 	 * The name of the Jupyter configuration file that the plugin uses
 	 * to get rid of the checkpoints. No folders involved in this value.
 	 * 
@@ -449,10 +471,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	 */
 	private async generateJupyterConfig(): Promise<boolean> {
 		// Then retrieve the path to the checkpoints folder
-		const absoluteCheckpointsFolderPath =
-			this.settings.checkpointsFolder == ""
-			? this.getCheckpointsAbsoluteRootFolder()
-			: this.settings.checkpointsFolder;
+		const absoluteCheckpointsFolderPath = this.getCheckpointsActualAbsoluteRootFolder();
 		if (absoluteCheckpointsFolderPath === null) {
 			return false;
 		}
