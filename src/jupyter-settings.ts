@@ -15,6 +15,7 @@ export interface JupyterSettings {
     jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
+    updatePopup: boolean;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
@@ -30,6 +31,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
+    updatePopup: true,
     displayRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
@@ -161,6 +163,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Plugin customization")
             .setHeading();
+        new Setting(this.containerEl)
+            .setName("Update popup")
+            .setDesc("When the plugin is updated, a popup is shown with what changes were made.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.updatePopup)
+                    .onChange(((value: boolean) => {
+                        void this.plugin.setUpdatePopup(value);
+                    }).bind(this));
+            }).bind(this));
         new Setting(this.containerEl)
             .setName("Display ribbon icon")
             .setDesc("Define whether or not you want this Jupyter plugin to use a ribbon icon.")

@@ -7,7 +7,7 @@
  * Thank you very much @chhoumann !
  */
 
-import { App, ButtonComponent, Component, MarkdownRenderer, Modal, Setting } from "obsidian";
+import { App, ButtonComponent, Component, MarkdownRenderer, Modal, Notice, Setting } from "obsidian";
 import JupyterNotebookPlugin from "src/jupyter-obsidian";
 
 /**
@@ -179,7 +179,10 @@ export class UpdateModal extends Modal {
                 disableBtn
                     .setIcon("megaphone-off")
                     .setButtonText("Disable update popups")
-                    .onClick((() => { /* TODO : Set the setting and show a notice here */ }).bind(this))
+                    .onClick((() => {
+                        void this.plugin.setUpdatePopup(false);
+                        new Notice("Jupyter for Obsidian won't display update popups anymore.");
+                    }).bind(this))
             }).bind(this));
         
         contentEl.createEl("h2", {

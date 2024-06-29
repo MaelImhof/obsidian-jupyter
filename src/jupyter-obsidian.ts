@@ -136,7 +136,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		// this.settings.knownVersion = currentVersion;
 		// void this.saveSettings();
 
-		// TODO : Add a setting that allows the user to disable this feature
+		if (!this.settings.updatePopup) return;
 
 		const updateModal = new UpdateModal(this.app, this, "0.2.1-beta", "0.4.0-beta");
 		updateModal.open();
@@ -198,6 +198,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 	
 	public async setMoveCheckpointsToTrash(value: boolean) {
 		this.settings.moveCheckpointsToTrash = value;
+		await this.saveSettings();
+	}
+
+	public async setUpdatePopup(value: boolean) {
+		this.settings.updatePopup = value;
 		await this.saveSettings();
 	}
 
