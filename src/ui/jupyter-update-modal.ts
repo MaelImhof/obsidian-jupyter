@@ -196,7 +196,7 @@ export class UpdateModal extends Modal {
                 let changelog = results === null
                     ? "Could not load this changelog."
                     : results[1];
-                return `### Jupyter for Obsidian v${release.tag_name}\n\n${addExtraHashToHeadings(changelog)}`;
+                return `### [Jupyter for Obsidian v${release.tag_name}](https://github.com/MaelImhof/obsidian-jupyter/releases/tag/${release.tag_name})\n\n${addExtraHashToHeadings(changelog)}`;
             })
 			.join("\n---\n");
 
