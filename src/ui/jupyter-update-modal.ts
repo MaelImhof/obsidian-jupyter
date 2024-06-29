@@ -193,9 +193,7 @@ export class UpdateModal extends Modal {
 		const contentDiv = contentEl.createDiv();
 		const releaseNotes = this.releases
 			.map((release) => {
-                console.debug(release.body);
                 const results = release.body.match(changeLogRegex);
-                console.debug(results);
                 let changelog = results === null
                     ? "Could not load this changelog."
                     : results[1];
