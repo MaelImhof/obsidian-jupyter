@@ -1,7 +1,6 @@
 {
 	"name": "obsidian-jupyter",
-	"version": "0.1.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Open and edit Jupyter notebooks directly inside of Obsidian.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

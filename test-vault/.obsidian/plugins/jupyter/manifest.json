@@ -6,6 +6,5 @@
 	"description": "Open .ipynb files with Jupyter in Obsidian.",
 	"author": "Maël Imhof",
 	"authorUrl": "https://www.mael.im",
-	"fundingUrl": "",
 	"isDesktopOnly": true
 }
