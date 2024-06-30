@@ -141,18 +141,8 @@ export class UpdateModal extends Modal {
         }
         catch (err) {
             this.releases = [];
-            this.displayError();
+            this.display();
         }
-    }
-
-    private displayError(): void
-    {
-        const { contentEl } = this;
-        contentEl.empty();
-
-        contentEl.createEl("h1", {
-            text: "Failed to fetch release notes",
-        });
     }
 
 	private display(): void {
@@ -185,28 +175,40 @@ export class UpdateModal extends Modal {
                     }).bind(this))
             }).bind(this));
         
-        contentEl.createEl("h2", {
-            text: "What changed?"
-        });
-
-        const changeLogRegex = /## Change Log\s{1,5}([\s\S]*)$/;
 		const contentDiv = contentEl.createDiv();
-		const releaseNotes = this.releases
-			.map((release) => {
-                const results = release.body.match(changeLogRegex);
-                let changelog = results === null
-                    ? "Could not load this changelog."
-                    : results[1];
-                return `### [Jupyter for Obsidian v${release.tag_name}](https://github.com/MaelImhof/obsidian-jupyter/releases/tag/${release.tag_name})\n\n${addExtraHashToHeadings(changelog)}`;
-            })
-			.join("\n---\n");
+        
+        if (!this.releases || this.releases.length === 0) {
+            void MarkdownRenderer.render(
+                this.app,
+                `> [!FAILURE]\n> Release notes could not be retrieved. You can still look at the last releases [on GitHub](https://github.com/MaelImhof/obsidian-jupyter/releases) directly.`,
+                contentDiv,
+                this.app.vault.getRoot().path,
+                new Component()
+            );
+        }
+        else {
+            contentEl.createEl("h2", {
+                text: "What changed?"
+            });
 
-        void MarkdownRenderer.render(
-            this.app,
-            releaseNotes,
-            contentDiv,
-            this.app.vault.getRoot().path,
-            new Component()
-        );
+            const changeLogRegex = /## Change Log\s{1,5}([\s\S]*)$/;
+		    const releaseNotes = this.releases
+		    	.map((release) => {
+                    const results = release.body.match(changeLogRegex);
+                    let changelog = results === null
+                        ? "Could not load this changelog."
+                        : results[1];
+                    return `### [Jupyter for Obsidian v${release.tag_name}](https://github.com/MaelImhof/obsidian-jupyter/releases/tag/${release.tag_name})\n\n${addExtraHashToHeadings(changelog)}`;
+                })
+		    	.join("\n---\n");
+
+            void MarkdownRenderer.render(
+                this.app,
+                releaseNotes,
+                contentDiv,
+                this.app.vault.getRoot().path,
+                new Component()
+            );
+        }
 	}
 }

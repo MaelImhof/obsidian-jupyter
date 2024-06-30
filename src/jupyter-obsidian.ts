@@ -124,21 +124,21 @@ export default class JupyterNotebookPlugin extends Plugin {
 		const knownVersion = this.settings.knownVersion;
 
 		// The version setting hasn't been set yet, the plugin has just been installed
-		// if (knownVersion === "") {
-		// 	return;
-		// }
+		if (knownVersion === "") {
+			return;
+		}
 
 		// The current version has already been announced
 		if (knownVersion === currentVersion) {
 			return;
 		}
 
-		// this.settings.knownVersion = currentVersion;
-		// void this.saveSettings();
+		this.settings.knownVersion = currentVersion;
+		void this.saveSettings();
 
 		if (!this.settings.updatePopup) return;
 
-		const updateModal = new UpdateModal(this.app, this, "0.2.1-beta", "0.4.0-beta");
+		const updateModal = new UpdateModal(this.app, this, knownVersion, currentVersion);
 		updateModal.open();
 	}
 
