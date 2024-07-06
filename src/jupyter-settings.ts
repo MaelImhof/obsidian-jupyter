@@ -1,7 +1,6 @@
 import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
 import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
-import { JupyterModal } from "./ui/jupyter-modal";
 import { JupyterRestartModal } from "./ui/jupyter-restart-modal";
 
 export enum PythonExecutableType {
@@ -16,10 +15,14 @@ export interface JupyterSettings {
     jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
+    updatePopup: boolean;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
     debugConsole: boolean;
+
+    // These are not for the user to modify
+    knownVersion: string;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     pythonExecutable: PythonExecutableType.PYTHON,
@@ -28,10 +31,13 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
+    updatePopup: true,
     displayRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
-    debugConsole: false
+    debugConsole: false,
+
+    knownVersion: ""
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -157,6 +163,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Plugin customization")
             .setHeading();
+        new Setting(this.containerEl)
+            .setName("Update popup")
+            .setDesc("When the plugin is updated, a popup is shown with what changes were made.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.updatePopup)
+                    .onChange(((value: boolean) => {
+                        void this.plugin.setUpdatePopup(value);
+                    }).bind(this));
+            }).bind(this));
         new Setting(this.containerEl)
             .setName("Display ribbon icon")
             .setDesc("Define whether or not you want this Jupyter plugin to use a ribbon icon.")
