@@ -1,0 +1,17 @@
+name: Safeguard for release PRs
+
+on:
+  pull_request:
+    branches:
+      - release
+
+jobs:
+  restrict-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check PR Base Branch
+      run: |
+        if [[ "${{ github.base_ref }}" != "dev" ]]; then
+          echo "Pull requests to the release branch must come from the dev branch."
+          exit 1
+        fi
