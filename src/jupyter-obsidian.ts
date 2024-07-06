@@ -3,7 +3,6 @@ import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, J
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
-import { UpdateModal } from "./ui/jupyter-update-modal";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -52,8 +51,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
-
-		this.announceUpdate();
 	}
 
 	async onunload() {
@@ -105,41 +102,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			}).bind(this));
 			this.env.exit();
 		}
-	}
-
-
-	/*=====================================================*/
-	/* UI Events (ribbon icon, server setting)             */
-	/*=====================================================*/
-
-	/**
-	 * Checks whether the plugin has been updated and displays a
-	 * popup message if it has.
-	 * 
-	 * Strongly inspired from the QuickAdd implementation :
-	 * https://github.com/chhoumann/quickadd/blob/08f269393c3cec5bf0c1d64a79d7999afd0a35a9/src/main.ts#L210
-	 */
-	private announceUpdate() {
-		const currentVersion = this.manifest.version;
-		const knownVersion = this.settings.knownVersion;
-
-		// The version setting hasn't been set yet, the plugin has just been installed
-		if (knownVersion === "") {
-			return;
-		}
-
-		// The current version has already been announced
-		if (knownVersion === currentVersion) {
-			return;
-		}
-
-		this.settings.knownVersion = currentVersion;
-		void this.saveSettings();
-
-		if (!this.settings.updatePopup) return;
-
-		const updateModal = new UpdateModal(this.app, this, knownVersion, currentVersion);
-		updateModal.open();
 	}
 
 
@@ -198,11 +160,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	
 	public async setMoveCheckpointsToTrash(value: boolean) {
 		this.settings.moveCheckpointsToTrash = value;
-		await this.saveSettings();
-	}
-
-	public async setUpdatePopup(value: boolean) {
-		this.settings.updatePopup = value;
 		await this.saveSettings();
 	}
 
