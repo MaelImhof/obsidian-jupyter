@@ -1,4 +1,38 @@
-import { normalizePath } from "obsidian";
+import { FileSystemAdapter, normalizePath, Vault } from "obsidian";
+
+/**
+ * Retrieves the root absolute (system) path of the provided vault.
+ * 
+ * @param vault The vault to get the root path of.
+ * 
+ * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
+ */
+export function getVaultRootPath(vault: Vault): string {
+    if (vault.adapter instanceof FileSystemAdapter) {
+        return vault.adapter.getBasePath();
+    }
+    else {
+        throw new Error("Invalid environment : Jupyter for Obsidian needs a FileSystemAdapter instance to work with absolute paths.");
+    }
+}
+
+/**
+ * Checks whether the provided path lies within the provided Obsidian vault.
+ * 
+ * @param path The path of the file or folder that is or is not in the vault.
+ * @param vault The reference vault to look into.
+ * 
+ * @returns True if the provided path lies within the provided vault, false otherwise.
+ * 
+ * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
+ */
+export function inVault(path: string|JupyterAbstractPath, vault: Vault): boolean {
+    if (path instanceof JupyterAbstractPath) {
+        path = path.getAbsolutePath();
+    }
+
+    return path.startsWith(getVaultRootPath(vault));
+}
 
 /**
  * Represents a file or a folder in the eyes of the Jupyter for Obsidian plugin.
