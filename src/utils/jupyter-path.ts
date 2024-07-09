@@ -26,12 +26,17 @@ export function getVaultRootPath(vault: Vault): string {
  * 
  * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
  */
-export function inVault(path: string|JupyterAbstractPath, vault: Vault): boolean {
+export function inVault(path: string|JupyterAbstractPath, vault: Vault, root: string|null = null): boolean {
     if (path instanceof JupyterAbstractPath) {
         path = path.getAbsolutePath();
     }
 
-    return path.startsWith(getVaultRootPath(vault));
+    if (root === null) {
+        return path.startsWith(getVaultRootPath(vault));
+    }
+    else {
+        return path.startsWith(root);
+    }
 }
 
 /**
@@ -153,5 +158,30 @@ export class JupyterAbstractPath {
      */
     public inVault(): boolean {
         return this.isInVault;
+    }
+
+    /**
+     * Utility function to ease the creation of a Jupyter abstract path.
+     * 
+     * Simply give the absolute path of the file/folder and indicate which of the two it is.
+     * 
+     * @param absolute The absolute path to the file/folder to represent.
+     * @param isFolder Whether it is a folder (or not, in which case it is a file).
+     * 
+     * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
+     */
+    public static from(absolute: string, isFolder: boolean, vault: Vault): JupyterAbstractPath {
+        // Get the root path of the vault
+        const vaultRoot = getVaultRootPath(vault);
+        
+        // See if the file/folder is in the vault
+        const isInVault = inVault(absolute, vault, vaultRoot);
+
+        // Compute the relative path if needed
+        const relative = isInVault
+            ? absolute.substring(vaultRoot.length)
+            : null;
+
+        return new JupyterAbstractPath(absolute, relative, isFolder, isInVault);
     }
 }
