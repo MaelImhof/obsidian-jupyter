@@ -10,7 +10,7 @@ import { normalizePath } from "obsidian";
  * performs some checks at initialization. Can result in an error if the provided
  * properties are invalid or incoherent.
  */
-class JupyterAbstractPath {
+export class JupyterAbstractPath {
     /**
      * The absolute path of the file/folder, for example "C:/some/path/".
      * 
