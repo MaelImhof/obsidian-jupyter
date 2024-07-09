@@ -3,6 +3,8 @@ import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, J
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
+import { unlinkSync } from "fs";
+import trash from "trash";
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -337,6 +339,24 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
 	private async purgeJupyterCheckpoints() {
+		// Decide, depending on the settings and the environment, where the checkpoints are
+		const checkpointsActualRoot = this.getCheckpointsActualAbsoluteRootFolder();
+
+		// If the root folder of the Jupyter checkpoints is not found, cannot delete it
+		if (checkpointsActualRoot === null) {
+			return;
+		}
+
+		// If the root checkpoints folder was found, delete it
+		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
+			// Even if the setting is disabled, we do not want to keep the
+			// special checkpoints folder around, but we move it to the bin so
+			// that it is still recoverable.
+			trash(normalizePath(checkpointsActualRoot));
+		}
+		else {
+			unlinkSync(normalizePath(checkpointsActualRoot));
+		}
 		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
 		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
 			// Even if the setting is disabled, we do not want to keep the
@@ -387,9 +407,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 			return this.getCheckpointsAbsoluteRootFolder();
 		}
 		else {
-			return this.settings.checkpointsFolder.endsWith("/")
+			return (this.settings.checkpointsFolder.endsWith("/")
 				? this.settings.checkpointsFolder
-				: this.settings.checkpointsFolder + "/";
+				: this.settings.checkpointsFolder + "/")
+				+ ".ipynb_checkpoints/";
 		}
 	}
 
