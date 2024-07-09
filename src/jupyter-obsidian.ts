@@ -357,16 +357,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			unlinkSync(normalizePath(checkpointsActualRoot));
 		}
-		const checkpointsRelativeFolder = normalizePath(this.getCheckpointsRelativeRootFolder());
-		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
-			// Even if the setting is disabled, we do not want to keep the
-			// special checkpoints folder around, but we move it to the bin so
-			// that it is still recoverable.
-			this.app.vault.adapter.trashSystem(checkpointsRelativeFolder);
-		}
-		else {
-			this.app.vault.adapter.rmdir(checkpointsRelativeFolder, true);
-		}
 	}
 
 	private getCheckpointsRelativeRootFolder(): string {
