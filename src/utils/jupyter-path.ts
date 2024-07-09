@@ -170,7 +170,7 @@ export class JupyterAbstractPath {
      * 
      * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
      */
-    public static from(absolute: string, isFolder: boolean, vault: Vault): JupyterAbstractPath {
+    public static fromAbsolute(absolute: string, isFolder: boolean, vault: Vault): JupyterAbstractPath {
         // Get the root path of the vault
         const vaultRoot = getVaultRootPath(vault);
         
