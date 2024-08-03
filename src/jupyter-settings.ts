@@ -15,6 +15,11 @@ export interface JupyterSettings {
     jupyterEnvType: JupyterEnvironmentType;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
+    /**
+     * Required to end with '/'. When this value is set, a check
+     * is performed, and '/' is added at the end if needed.
+     */
+    checkpointsFolder: string;
     updatePopup: boolean;
     displayRibbonIcon: boolean;
     useStatusNotices: boolean;
@@ -31,6 +36,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     jupyterEnvType: JupyterEnvironmentType.LAB,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
+    checkpointsFolder: "",
     updatePopup: true,
     displayRibbonIcon: true,
     useStatusNotices: true,
@@ -153,6 +159,17 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .onChange((async (value: boolean) => {
                         await this.plugin.setMoveCheckpointsToTrash(value);
                     }).bind(this))
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Jupyter checkpoints folder")
+            .setDesc("The root folder for all Jupyter checkpoints. Leave empty for default. Requires restarting Jupyter to take effect. Has no effect if 'Delete Jupyter checkpoints' is not enabled.")
+            .addText(((text: TextComponent) => {
+                text
+                    .setPlaceholder(this.plugin.getDefaultCheckpointsRootFolder().getAbsolutePath() ?? "No default path available")
+                    .setValue(this.plugin.settings.checkpointsFolder)
+                    .onChange((async (value: string) => {
+                        await this.plugin.setCheckpointsFolder(value);
+                    }).bind(this));
             }).bind(this));
 
 
