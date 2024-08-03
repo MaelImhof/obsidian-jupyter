@@ -161,6 +161,35 @@ export class JupyterAbstractPath {
     }
 
     /**
+     * Returns a new path instance with the provided relative path appended to the original
+     * path contained by the current instance. Does not modify the current instance.
+     * 
+     * @param relativePath The path to add to the end of the current instance's path.
+     * @param isFolder     Whether the represented path of the new instance will be a folder
+     *                     (or not, in which case it is a file).
+     * 
+     * @throws If the current instance is not a folder.
+     */
+    public append(relativePath: string, isFolder: boolean): JupyterAbstractPath {
+        // Cannot add some path to the end of a file's path, must be a folder
+        if (!this.isFolder()) {
+            throw new Error("Cannot append a path to a file, the instance must represent a folder.");
+        }
+
+        // Check that the provided relative path does not start with '/'
+        if (relativePath.startsWith('/')) {
+            relativePath = relativePath.substring(1);
+        }
+
+        return new JupyterAbstractPath(
+            this.absolutePath + relativePath,
+            this.relativePath === null ? null : this.relativePath + relativePath,
+            isFolder,
+            this.inVault()
+        );
+    }
+
+    /**
      * Utility function to ease the creation of a Jupyter abstract path.
      * 
      * Simply give the absolute path of the file/folder and indicate which of the two it is.
