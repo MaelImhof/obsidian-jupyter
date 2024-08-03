@@ -385,7 +385,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			// Prefer to use the Obsidian's vault adapter where possible
 			if (checkpointsFolder.inVault()) {
-				this.app.vault.adapter.remove(checkpointsFolder.getRelativePath() as string);
+				this.app.vault.adapter.rmdir(checkpointsFolder.getRelativePath() as string, true);
 			}
 			else {
 				rmdirSync(checkpointsFolder.getAbsolutePath(), { recursive: true });
