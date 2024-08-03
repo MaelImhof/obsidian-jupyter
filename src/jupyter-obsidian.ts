@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Notice, Plugin, normalizePath, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, Notice, Plugin, Tasks, Workspace, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
@@ -54,6 +54,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
+
+		// Try to unload when Obsidian is closed by the user/the OS
+		this.app.workspace.on('quit', async (_tasks: Tasks) => {
+			await this.onunload();
+		});
 
 		this.announceUpdate();
 	}
