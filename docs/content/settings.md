@@ -70,6 +70,11 @@ Relative paths are accepted and will be resolved relative to the Jupyter's root 
 
 This setting allows to store the checkpoints **outside of the vault** using an absolute path. This is particularly useful if some automatic backup system is set up on the vault, and the user does not want to backup the Jupyter checkpoints. In this case, checkpoints can be stored outside of the vault in a user-defined location. However, note that **if checkpoints are stored outside the vault, [[#Move Jupyter checkpoints to trash|trashing]] no longer works**. This means that if checkpoints are outside the vault, having the [[#Move Jupyter checkpoints to trash|Move Jupyter checkpoints to trash]] setting enabled will display an error notice and won't delete the checkpoints. Deleting the checkpoints permanently still works.
 ### Plugin customization
+#### Update popup
+
+When the plugin gets an update, a popup will show to tell the user that a new version of Jupyter for Obsidian was installed with links to the GitHub releases and a list of the changes that were performed.
+
+This popup is enabled by default but can be disabled using this setting.
 #### Display ribbon icon
 
 Whether to display the plugin's ribbon icon or not. Can help if you find the ribbon icon unnecessary and want to get rid of it.
