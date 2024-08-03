@@ -113,7 +113,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	private async loadSettings() {
 		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
-		if (!this.settings.checkpointsFolder.endsWith('/')) {
+		if (this.settings.checkpointsFolder !== "" && !this.settings.checkpointsFolder.endsWith('/')) {
 			this.settings.checkpointsFolder += '/';
 			await this.saveSettings();
 		}
@@ -171,7 +171,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	public async setCheckpointsFolder(value: string) {
 		// Make sure the provided checkpoints folder ends with '/'
-		if (!value.endsWith('/')) {
+		if (value !== "" && !value.endsWith('/')) {
 			value += '/';
 		}
 		this.settings.checkpointsFolder = value;
