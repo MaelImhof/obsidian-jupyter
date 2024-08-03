@@ -379,7 +379,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 				new Notice("[Jupyter for Obsidian] ERROR\n\nMoving the Jupyter checkpoints to the " +
 					"system trash is only possible when the checkpoints are stored inside of the vault.\n\n" +
 					"Please consider changing either the checkpoints folder path setting to one that is inside " +
-					"the vault, or define the checkpoints to be deleted without going to the trash.", 0);
+					"the vault, or define the checkpoints to be deleted without going to the trash.\n\n" +
+					"Your checkpoints were not deleted nor moved to the trash.", 0);
 			}
 		}
 		else {
