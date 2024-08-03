@@ -65,7 +65,17 @@ export class EmbeddedJupyterView extends FileView {
                     this.plugin.toggleJupyter();
                 }
                 else {
-                    this.displayMessage("No Jupyter server", "Jupyter does not seem to be running. Please make sure to start the server manually using the plugin's ribbon icon or settings. You can also enable automatic start of the Jupyter server when a document is opened in the settings.");
+                    this.displayMessage(
+                        "No Jupyter server",
+                        "Jupyter does not seem to be running. Please make sure to start the server manually using the plugin's ribbon icon or settings. You can also enable automatic start of the Jupyter server when a document is opened in the settings.",
+                        {
+                            text: "Start Jupyter",
+                            onClick: () => {
+                                this.plugin.env.start();
+                            },
+                            closeOnClick: false
+                        }
+                    );
                     return;
                 }
                 break;
