@@ -3,7 +3,7 @@ import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, J
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
-import { unlinkSync } from "fs";
+import { rmdirSync } from "fs";
 import { JupyterAbstractPath } from "./utils/jupyter-path";
 
 export default class JupyterNotebookPlugin extends Plugin {
@@ -388,7 +388,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 				this.app.vault.adapter.remove(checkpointsFolder.getRelativePath() as string);
 			}
 			else {
-				unlinkSync(normalizePath(checkpointsFolder.getAbsolutePath()));
+				rmdirSync(checkpointsFolder.getAbsolutePath(), { recursive: true });
 			}
 		}
 	}
