@@ -53,6 +53,11 @@ This setting has no effect if [[#Delete Jupyter checkpoints]] is disabled.
 
 By default, Jupyter checkpoints are moved to trash (enabled).
 ### Plugin customization
+#### Update popup
+
+When the plugin gets an update, a popup will show to tell the user that a new version of Jupyter for Obsidian was installed with links to the GitHub releases and a list of the changes that were performed.
+
+This popup is enabled by default but can be disabled using this setting.
 #### Display ribbon icon
 
 Whether to display the plugin's ribbon icon or not. Can help if you find the ribbon icon unnecessary and want to get rid of it.
