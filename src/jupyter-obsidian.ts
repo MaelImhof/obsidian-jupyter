@@ -362,8 +362,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			// because the plugin is being executed on mobile.
 			return;
 		}
-		
-		console.debug("Deleting checkpoints:", checkpointsFolder.getAbsolutePath());
 
 		// If the root checkpoints folder was found, delete it
 		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
