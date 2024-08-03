@@ -4,7 +4,6 @@ import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
 import { unlinkSync } from "fs";
-import trash from "trash";
 import { JupyterAbstractPath } from "./utils/jupyter-path";
 
 export default class JupyterNotebookPlugin extends Plugin {
@@ -354,9 +353,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	private async purgeJupyterCheckpoints() {
 		// Find what the folder to delete is, where the checkpoints are stored
-		let checkpointsActualRoot: JupyterAbstractPath;
+		let checkpointsFolder: JupyterAbstractPath;
 		try {
-			checkpointsActualRoot = this.getCheckpointsRootFolder();
+			checkpointsFolder = this.getCheckpointsRootFolder();
 		}
 		catch (e: any) {
 			// The root folder of the Jupyter checkpoints cannot be found, most probably
@@ -364,17 +363,33 @@ export default class JupyterNotebookPlugin extends Plugin {
 			return;
 		}
 		
-		console.debug("Deleting checkpoints:", checkpointsActualRoot.getAbsolutePath());
+		console.debug("Deleting checkpoints:", checkpointsFolder.getAbsolutePath());
 
 		// If the root checkpoints folder was found, delete it
 		if (!this.settings.deleteCheckpoints || this.settings.moveCheckpointsToTrash) {
 			// Even if the setting is disabled, we do not want to keep the
 			// special checkpoints folder around, but we move it to the bin so
 			// that it is still recoverable.
-			trash(normalizePath(checkpointsActualRoot.getAbsolutePath()));
+
+			// Trashing is only possible inside of the vault for now
+			if (checkpointsFolder.inVault()) {
+				this.app.vault.adapter.trashSystem(checkpointsFolder.getRelativePath() as string);
+			}
+			else {
+				new Notice("[Jupyter for Obsidian] ERROR\n\nMoving the Jupyter checkpoints to the " +
+					"system trash is only possible when the checkpoints are stored inside of the vault.\n\n" +
+					"Please consider changing either the checkpoints folder path setting to one that is inside " +
+					"the vault, or define the checkpoints to be deleted without going to the trash.", 0);
+			}
 		}
 		else {
-			unlinkSync(normalizePath(checkpointsActualRoot.getAbsolutePath()));
+			// Prefer to use the Obsidian's vault adapter where possible
+			if (checkpointsFolder.inVault()) {
+				this.app.vault.adapter.remove(checkpointsFolder.getRelativePath() as string);
+			}
+			else {
+				unlinkSync(normalizePath(checkpointsFolder.getAbsolutePath()));
+			}
 		}
 	}
 
