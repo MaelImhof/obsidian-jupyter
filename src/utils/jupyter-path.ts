@@ -184,4 +184,32 @@ export class JupyterAbstractPath {
 
         return new JupyterAbstractPath(absolute, relative, isFolder, isInVault);
     }
+
+    /**
+     * Utility function to ease the creation of a Jupyter abstract path.
+     * 
+     * Simply give the relative path of the file/folder and indicate which of the two it is.
+     * 
+     * @param relative The path to the file/folder relative to the vault's root.
+     * @param isFolder Whether it is a folder (or not, in which case it is a file).
+     * 
+     * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
+     */
+    public static fromRelative(relative: string, isFolder: boolean, vault: Vault): JupyterAbstractPath {
+        // Get the root path of the vault
+        let vaultRoot = getVaultRootPath(vault);
+
+        // Ensure the vault's root ends with '/'
+        if (!vaultRoot.endsWith('/')) {
+            vaultRoot = vaultRoot + '/';
+        }
+
+        // Ensure that relative does not start with '/'
+        if (relative.startsWith('/')) {
+            relative = relative.substring(1);
+        }
+
+        // Append the relative path to the absolute one of the vault to get the complete path
+        return new JupyterAbstractPath(vaultRoot + relative, relative, isFolder, true);
+    }
 }
