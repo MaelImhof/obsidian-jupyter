@@ -50,7 +50,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.startEnvOnceInitialized) {
 			this.toggleJupyter();
 		}
-		if (this.settings.displayRibbonIcon) {
+		if (this.settings.displayServerRibbonIcon) {
 			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 		}
 
@@ -250,8 +250,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
-	public async setRibbonIconSetting(value: boolean) {
-		this.settings.displayRibbonIcon = value;
+	public async setServerRibbonIconSetting(value: boolean) {
+		this.settings.displayServerRibbonIcon = value;
 		await this.saveSettings();
 		if (!value) {
 			this.serverRibbonIcon?.remove();
@@ -260,6 +260,20 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 			this.updateRibbon(this.env);
+		}
+	}
+
+	public async setFileRibbonIconSetting(value: boolean) {
+		this.settings.displayFileRibbonIcon = value;
+		await this.saveSettings();
+		if (!value) {
+			this.fileRibbonIcon?.remove();
+			this.fileRibbonIcon = null;
+		}
+		else {
+			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", (_event: MouseEvent) => {
+				// TODO : Implement the creation of a new Jupyter notebook file
+			});
 		}
 	}
 
@@ -389,7 +403,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private async updateRibbon(env: JupyterEnvironment) {
-		if (this.serverRibbonIcon === null || !this.settings.displayRibbonIcon) {
+		if (this.serverRibbonIcon === null || !this.settings.displayServerRibbonIcon) {
 			return;
 		}
 

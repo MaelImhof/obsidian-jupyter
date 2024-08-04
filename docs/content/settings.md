@@ -75,11 +75,20 @@ This setting allows to store the checkpoints **outside of the vault** using an a
 When the plugin gets an update, a popup will show to tell the user that a new version of Jupyter for Obsidian was installed with links to the GitHub releases and a list of the changes that were performed.
 
 This popup is enabled by default but can be disabled using this setting.
-#### Display ribbon icon
+#### Ribbon icon for server status
 
-Whether to display the plugin's ribbon icon or not. Can help if you find the ribbon icon unnecessary and want to get rid of it.
+Jupyter for Obsidian can display a ribbon icon that adapts based on the Jupyter server status (running, exited or starting). This setting defines whether that ribbon icon should be drawn.
+
+The setting is thought for users who have many plugins installed who do not want to crowd their ribbon icons bar too much.
 
 ![[ribbon-icon.png]]
+
+Default value is yes (the ribbon icon is displayed).
+#### Ribbon icon for new notebooks
+
+Defines whether another ribbon icon (different from [[#Ribbon icon for server status|the one for server status]]) is drawn. This second ribbon icon allows the user to create a new Jupyter notebook file at the root of the vault.
+
+This ribbon icon is independent from the server status one, meaning that it can be enabled whether the ribbon icon for server status is enabled or not, and vice-versa.
 
 Default value is yes (the ribbon icon is displayed).
 #### Display status notices

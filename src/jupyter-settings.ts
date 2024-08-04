@@ -21,7 +21,8 @@ export interface JupyterSettings {
      */
     checkpointsFolder: string;
     updatePopup: boolean;
-    displayRibbonIcon: boolean;
+    displayServerRibbonIcon: boolean;
+    displayFileRibbonIcon: boolean;
     useStatusNotices: boolean;
     jupyterTimeoutMs: number;
     debugConsole: boolean;
@@ -38,7 +39,8 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     moveCheckpointsToTrash: true,
     checkpointsFolder: "",
     updatePopup: true,
-    displayRibbonIcon: true,
+    displayServerRibbonIcon: true,
+    displayFileRibbonIcon: true,
     useStatusNotices: true,
     jupyterTimeoutMs: 30000,
     debugConsole: false,
@@ -191,13 +193,23 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)
-            .setName("Display ribbon icon")
-            .setDesc("Define whether or not you want this Jupyter plugin to use a ribbon icon.")
+            .setName("Ribbon icon for server status")
+            .setDesc("Whether to display a ribbon icon that indicates the server status (exited, starting, running), which can be used to start/stop the server.")
             .addToggle(((toggle: ToggleComponent) =>
                 toggle
-                    .setValue(this.plugin.settings.displayRibbonIcon)
+                    .setValue(this.plugin.settings.displayServerRibbonIcon)
                     .onChange((async (value: boolean) => {
-                        await this.plugin.setRibbonIconSetting(value);
+                        await this.plugin.setServerRibbonIconSetting(value);
+                    }).bind(this))
+            ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Ribbon icon for new notebooks")
+            .setDesc("Whether to display a ribbon icon that creates a blank Jupyter notebook when clicked.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.displayFileRibbonIcon)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setFileRibbonIconSetting(value);
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)
