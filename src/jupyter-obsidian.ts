@@ -14,7 +14,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
-	private ribbonIcon: HTMLElement|null = null;
+	private serverRibbonIcon: HTMLElement|null = null;
+	private fileRibbonIcon: HTMLElement|null = null;
 
 	public readonly env: JupyterEnvironment = new JupyterEnvironment(
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
@@ -49,7 +50,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.startEnvOnceInitialized) {
 			this.toggleJupyter();
 		}
-		this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+		if (this.settings.displayRibbonIcon) {
+			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+		}
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
@@ -251,11 +254,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.displayRibbonIcon = value;
 		await this.saveSettings();
 		if (!value) {
-			this.ribbonIcon?.remove();
-			this.ribbonIcon = null;
+			this.serverRibbonIcon?.remove();
+			this.serverRibbonIcon = null;
 		}
 		else {
-			this.ribbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
+			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 			this.updateRibbon(this.env);
 		}
 	}
@@ -386,22 +389,22 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	private async updateRibbon(env: JupyterEnvironment) {
-		if (this.ribbonIcon === null || !this.settings.displayRibbonIcon) {
+		if (this.serverRibbonIcon === null || !this.settings.displayRibbonIcon) {
 			return;
 		}
 
 		switch (env.getStatus()) {
 			case JupyterEnvironmentStatus.STARTING:
-				setIcon(this.ribbonIcon as HTMLElement, "monitor-dot");
-				setTooltip(this.ribbonIcon as HTMLElement, "Jupyter Server is starting");
+				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-dot");
+				setTooltip(this.serverRibbonIcon as HTMLElement, "Jupyter Server is starting");
 				break;
 			case JupyterEnvironmentStatus.RUNNING:
-				setIcon(this.ribbonIcon as HTMLElement, "monitor-stop");
-				setTooltip(this.ribbonIcon as HTMLElement, "Stop Jupyter Server");
+				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-stop");
+				setTooltip(this.serverRibbonIcon as HTMLElement, "Stop Jupyter Server");
 				break;
 			case JupyterEnvironmentStatus.EXITED:
-				setIcon(this.ribbonIcon as HTMLElement, "monitor-play");
-				setTooltip(this.ribbonIcon as HTMLElement, "Start Jupyter Server");
+				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-play");
+				setTooltip(this.serverRibbonIcon as HTMLElement, "Start Jupyter Server");
 				break;
 		}
 	}
