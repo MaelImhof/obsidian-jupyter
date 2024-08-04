@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Notice, Plugin, Tasks, Workspace, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, Notice, PaneType, Plugin, TFile, Tasks, Workspace, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
@@ -472,6 +472,27 @@ export default class JupyterNotebookPlugin extends Plugin {
 			file.getRelativePath() as string,
 			`{"cells": [],"metadata": {"kernelspec": {"display_name": "","name": ""},"language_info": {"name": ""}},"nbformat": 4,"nbformat_minor": 5}`
 		);
+
+		// Depending on the corresponding setting, open the created notebook
+		if (this.settings.openCreatedFileMode !== OpenCreatedNotebook.DONT) {
+			let newLeaf: PaneType|boolean;
+			switch (this.settings.openCreatedFileMode) {
+				case OpenCreatedNotebook.CURRENT_TAB:
+					newLeaf = false;
+					break;
+				case OpenCreatedNotebook.NEW_TAB:
+					newLeaf = 'tab';
+					break;
+				case OpenCreatedNotebook.SPLIT:
+					newLeaf = 'split';
+					break;
+				case OpenCreatedNotebook.WINDOW:
+					newLeaf = 'window';
+					break;
+			}
+			const leaf = this.app.workspace.getLeaf(newLeaf);
+			leaf.openFile(this.app.vault.getFileByPath(file.getRelativePath() as string) as TFile);
+		}
 	}
 
 

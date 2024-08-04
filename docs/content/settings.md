@@ -104,7 +104,9 @@ Defines whether to immediately open new notebook files when they are created, an
 
 Possible values are
 - **Do not open**, simply create the file without opening it
-- **Open in a new tab**, create the file and then open it in a new tab
+- **Open in the current tab**, like the general behavior in Obsidian, replace the currently active document (if any) with the newly created notebook
+- **Open in a new tab**, create the file and then open it in a new tab, without replacing the active file
+- **Open in a new split tab**, create the file, split the current workspace and open the new notebook in the new split tab
 - **Open in a detached window**, create the file and open it in a detached window
 
 By default, new notebooks are opened in a new tab.

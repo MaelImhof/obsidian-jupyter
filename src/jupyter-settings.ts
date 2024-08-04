@@ -10,7 +10,9 @@ export enum PythonExecutableType {
 
 export enum OpenCreatedNotebook {
     DONT = "dont-open",
-    TAB = "new-tab",
+    CURRENT_TAB = "current-tab",
+    NEW_TAB = "new-tab",
+    SPLIT = "split",
     WINDOW = "detached-window"
 }
 
@@ -49,7 +51,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     displayServerRibbonIcon: true,
     useStatusNotices: true,
     displayFileRibbonIcon: true,
-    openCreatedFileMode: OpenCreatedNotebook.TAB,
+    openCreatedFileMode: OpenCreatedNotebook.CURRENT_TAB,
     jupyterTimeoutMs: 30000,
     debugConsole: false,
 
@@ -236,7 +238,9 @@ export class JupyterSettingsTab extends PluginSettingTab {
             .addDropdown(((dropdown: DropdownComponent) => {
                 dropdown
                     .addOption(OpenCreatedNotebook.DONT, "Do not open")
-                    .addOption(OpenCreatedNotebook.TAB, "Open in a new tab")
+                    .addOption(OpenCreatedNotebook.CURRENT_TAB, "Open in the current tab (default)")
+                    .addOption(OpenCreatedNotebook.NEW_TAB, "Open in a new tab")
+                    .addOption(OpenCreatedNotebook.SPLIT, "Open in a new split tab")
                     .addOption(OpenCreatedNotebook.WINDOW, "Open in a detached window")
                     .setValue(this.plugin.settings.openCreatedFileMode)
                     .onChange((async (value: OpenCreatedNotebook) => {
