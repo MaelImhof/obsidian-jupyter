@@ -1,0 +1,97 @@
+# ======================================================================================================================================================
+# Custom GitHub Action to draft a pre-release
+#
+# A GitHub draft pre-release is automatically created when the plugin's
+# `manifest-beta.json` is updated on the `release` branch.
+#
+# Based on :
+#   - [Obsidian developers docs](https://docs.obsidian.md/Plugins/Releasing/Release+your+plugin+with+GitHub+Actions)
+#   - [BRAT docs for developers](https://tfthacker.com/brat-developers)
+#   - [Excellent tutorial for multiline strings in GitHub Actions by Thomas Stringer](https://trstringer.com/github-actions-multiline-strings/)
+# ======================================================================================================================================================
+name: "Create a draft Beta pre-release"
+
+on:
+    # The workflow can be run manually
+    workflow_dispatch:
+    # The workflow is also triggered automatically when a push
+    # happens where the plugin's `manifest-beta.json` is modified
+    push:
+        branches:
+            - release
+        paths:
+            - 'manifest-beta.json'
+
+jobs:
+  create-draft-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Build plugin
+        run: |
+          npm install
+          npm run build
+
+      # To easily read JSON files and extract the version from the manifest
+      - name: Install jq
+        uses: dcarbone/install-jq-action@v2.1.0
+
+      - name: Extract tag from manifest
+        # Extract the tag to use from the beta manifest file
+        run: |
+          tag=$(jq -r '.version' manifest-beta.json)
+          echo "Extracted tag: $tag"
+          echo "TAG=$tag" >> $GITHUB_ENV
+
+      # Prepare a release notes template
+      - name: Prepare generic release notes
+        run: |
+          notes=$(cat <<EOF
+          Open \`.ipynb\` files, edit them and run them directly inside of Obsidian without the need to open a terminal or a browser.
+
+          Obsidian Jupyter is a plugin for [Obsidian](https://obsidian.md) that offers [Jupyter](https://jupyter.org/) Notebook and Lab integration directly into Obsidian.
+
+          ## How to install
+
+          Interested? Please follow the instructions of the [documentation](https://jupyter.mael.im) and let me hear your feedback, it enables me to keep improve the plugin. Thank you in advance !
+
+          ## Change Log
+
+          ### Features
+
+          ### Bug fixes
+
+          ### Documentation
+
+          ### Logistic
+
+          ### Development
+          EOF
+          )
+          # Thank you Thomas Stringer for this : https://trstringer.com/github-actions-multiline-strings/
+          echo "NOTES<<EOF" >> $GITHUB_ENV
+          echo "$notes" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create draft release
+        env:
+          # Extract the variables set previously from the environment
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.TAG }}
+          NOTES: ${{ env.NOTES }}
+        # Create a draft release with GitHub CLI
+        run: |
+          gh release create "$TAG" \
+            --title="Obsidian Jupyter v$TAG" \
+            --draft \
+            --prerelease \
+            --notes "$NOTES" \
+            --generate-notes \
+            main.js manifest-beta.json styles.css
