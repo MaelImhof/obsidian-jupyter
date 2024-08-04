@@ -61,6 +61,13 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.settings.displayFolderContextMenuItem) {
 			this.app.workspace.on('file-menu', this.onFileContextMenu);
 		}
+		this.addCommand({
+			id: "jupyter-create-notebook",
+			name: "Create new Jupyter notebook",
+			callback: (async () => {
+				await this.createJupyterNotebook(JupyterAbstractPath.fromRelative("/", true, this.app.vault));
+			}).bind(this)
+		});
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
