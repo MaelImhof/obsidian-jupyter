@@ -22,6 +22,9 @@ on:
         paths:
             - 'manifest-beta.json'
 
+permissions:
+  contents: write
+
 jobs:
   create-draft-release:
     runs-on: ubuntu-latest
