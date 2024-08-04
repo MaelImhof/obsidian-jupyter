@@ -84,6 +84,13 @@ The setting is thought for users who have many plugins installed who do not want
 ![[ribbon-icon.png]]
 
 Default value is yes (the ribbon icon is displayed).
+#### Display status notices
+
+Whether to display status notices when the Jupyter server state updates. A notice will appear every time the server is started, running, or exits.
+
+![[status-notices.png]]
+
+Default value is yes (the status notices are displayed).
 #### Ribbon icon for new notebooks
 
 Defines whether another ribbon icon (different from [[#Ribbon icon for server status|the one for server status]]) is drawn. This second ribbon icon allows the user to create a new Jupyter notebook file at the root of the vault.
@@ -91,13 +98,6 @@ Defines whether another ribbon icon (different from [[#Ribbon icon for server st
 This ribbon icon is independent from the server status one, meaning that it can be enabled whether the ribbon icon for server status is enabled or not, and vice-versa.
 
 Default value is yes (the ribbon icon is displayed).
-#### Display status notices
-
-Whether to display status notices when the Jupyter server state updates. A notice will appear every time the server is started, running, or exits. 
-
-![[status-notices.png]]
-
-Default value is yes (the status notices are displayed).
 ### Advanced
 #### Jupyter starting timeout
 

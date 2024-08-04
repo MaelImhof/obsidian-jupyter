@@ -22,8 +22,8 @@ export interface JupyterSettings {
     checkpointsFolder: string;
     updatePopup: boolean;
     displayServerRibbonIcon: boolean;
-    displayFileRibbonIcon: boolean;
     useStatusNotices: boolean;
+    displayFileRibbonIcon: boolean;
     jupyterTimeoutMs: number;
     debugConsole: boolean;
 
@@ -40,8 +40,8 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     checkpointsFolder: "",
     updatePopup: true,
     displayServerRibbonIcon: true,
-    displayFileRibbonIcon: true,
     useStatusNotices: true,
+    displayFileRibbonIcon: true,
     jupyterTimeoutMs: 30000,
     debugConsole: false,
 
@@ -203,16 +203,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)
-            .setName("Ribbon icon for new notebooks")
-            .setDesc("Whether to display a ribbon icon that creates a blank Jupyter notebook when clicked.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.displayFileRibbonIcon)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setFileRibbonIconSetting(value);
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
             .setName("Display status notices")
             .setDesc("If enabled, short messages will pop up when the Jupyter server is starting, running or exits.")
             .addToggle(((toggle: ToggleComponent) =>
@@ -220,6 +210,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.useStatusNotices)
                     .onChange((async (value: boolean) => {
                         await this.plugin.setStatusNoticesSetting(value);
+                    }).bind(this))
+            ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Ribbon icon for new notebooks")
+            .setDesc("Whether to display a ribbon icon that creates a blank Jupyter notebook when clicked.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.displayFileRibbonIcon)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setFileRibbonIconSetting(value);
                     }).bind(this))
             ).bind(this));
 

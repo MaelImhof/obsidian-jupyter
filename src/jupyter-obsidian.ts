@@ -266,6 +266,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	public async setStatusNoticesSetting(value: boolean) {
+		this.settings.useStatusNotices = value;
+		await this.saveSettings();
+	}
+
 	public async setFileRibbonIconSetting(value: boolean) {
 		this.settings.displayFileRibbonIcon = value;
 		await this.saveSettings();
@@ -276,11 +281,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
 		}
-	}
-
-	public async setStatusNoticesSetting(value: boolean) {
-		this.settings.useStatusNotices = value;
-		await this.saveSettings();
 	}
 
 	public async setJupyterTimeoutMs(value: number) {
