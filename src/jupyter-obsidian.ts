@@ -475,8 +475,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 					.setIcon("jupyter-logo")
 					.setSection("action-primary")
 					.onClick(async (_event: MouseEvent|KeyboardEvent) => {
-						console.debug(file.path);
-						console.debug(JupyterAbstractPath.fromRelative(file.path, true, this.app.vault).getRelativePath());
 						await this.createJupyterNotebook(JupyterAbstractPath.fromRelative(file.path, true, this.app.vault));
 					});
 			});
