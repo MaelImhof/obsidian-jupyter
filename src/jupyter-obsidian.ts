@@ -4,7 +4,7 @@ import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
 import { UpdateModal } from "./ui/jupyter-update-modal";
-import { rmdirSync } from "fs";
+import { existsSync, rmdirSync } from "fs";
 import { JupyterAbstractPath } from "./utils/jupyter-path";
 
 export default class JupyterNotebookPlugin extends Plugin {
@@ -548,6 +548,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		catch (e: any) {
 			// The root folder of the Jupyter checkpoints cannot be found, most probably
 			// because the plugin is being executed on mobile.
+			return;
+		}
+
+		// Check that the folder exists
+		if (!existsSync(checkpointsFolder.getAbsolutePath())) {
 			return;
 		}
 
