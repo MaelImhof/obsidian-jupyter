@@ -32,6 +32,7 @@ export interface JupyterSettings {
     displayServerRibbonIcon: boolean;
     useStatusNotices: boolean;
     displayFileRibbonIcon: boolean;
+    displayFolderContextMenuItem: boolean;
     openCreatedFileMode: OpenCreatedNotebook,
     jupyterTimeoutMs: number;
     debugConsole: boolean;
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     displayServerRibbonIcon: true,
     useStatusNotices: true,
     displayFileRibbonIcon: true,
+    displayFolderContextMenuItem: true,
     openCreatedFileMode: OpenCreatedNotebook.CURRENT_TAB,
     jupyterTimeoutMs: 30000,
     debugConsole: false,
@@ -230,6 +232,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.displayFileRibbonIcon)
                     .onChange((async (value: boolean) => {
                         await this.plugin.setFileRibbonIconSetting(value);
+                    }).bind(this))
+            ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Folder context menu for new notebooks")
+            .setDesc("If enabled, when you right-click on a folder, one of the actions will be to create a new Jupyter notebook in that folder.")
+            .addToggle(((toggle: ToggleComponent) =>
+                toggle
+                    .setValue(this.plugin.settings.displayFolderContextMenuItem)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setFolderContextMenuSetting(value);
                     }).bind(this))
             ).bind(this));
         new Setting(this.containerEl)

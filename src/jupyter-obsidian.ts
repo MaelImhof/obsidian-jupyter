@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Notice, PaneType, Plugin, TFile, Tasks, Workspace, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, Menu, MenuItem, Notice, PaneType, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
@@ -16,6 +16,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
 	private serverRibbonIcon: HTMLElement|null = null;
 	private fileRibbonIcon: HTMLElement|null = null;
+
+	private onFileContextMenu = this.onFileContextMenuOpened.bind(this);
 
 	public readonly env: JupyterEnvironment = new JupyterEnvironment(
 		(this.app.vault.adapter as FileSystemAdapter).getBasePath(),
@@ -56,6 +58,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.settings.displayFileRibbonIcon) {
 			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
 		}
+		if (this.settings.displayFolderContextMenuItem) {
+			this.app.workspace.on('file-menu', this.onFileContextMenu);
+		}
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
@@ -90,6 +95,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		// Kill the Jupyter Notebook process
 		this.env.exit();
 		await this.purgeJupyterCheckpoints();
+		this.app.workspace.off('file-menu', this.onFileContextMenu);
 	}
 
 
@@ -283,6 +289,17 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 	}
 
+	public async setFolderContextMenuSetting(value: boolean) {
+		this.settings.displayFolderContextMenuItem = value;
+		await this.saveSettings();
+		if (!value) {
+			this.app.workspace.off('file-menu', this.onFileContextMenu);
+		}
+		else {
+			this.app.workspace.on('file-menu', this.onFileContextMenu);
+		}
+	}
+
 	public async setOpenCreatedFileMode(value: OpenCreatedNotebook) {
 		this.settings.openCreatedFileMode = value;
 		await this.saveSettings();
@@ -440,6 +457,23 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	public async onFileRibbonIconClicked() {
 		await this.createJupyterNotebook(JupyterAbstractPath.fromRelative("/", true, this.app.vault));
+	}
+
+	public onFileContextMenuOpened(menu: Menu, file: TAbstractFile, _source: string, _leaf?: WorkspaceLeaf) {
+		// Only propose to create a Jupyter Notebook in folders
+		if (file instanceof TFolder) {
+			menu.addItem((item: MenuItem) => {
+				item
+					.setTitle("New Jupyter notebook")
+					.setIcon("jupyter-logo")
+					.setSection("action-primary")
+					.onClick(async (_event: MouseEvent|KeyboardEvent) => {
+						console.debug(file.path);
+						console.debug(JupyterAbstractPath.fromRelative(file.path, true, this.app.vault).getRelativePath());
+						await this.createJupyterNotebook(JupyterAbstractPath.fromRelative(file.path, true, this.app.vault));
+					});
+			});
+		}
 	}
 
 	private getDefaultNotebookFilename(): string {
