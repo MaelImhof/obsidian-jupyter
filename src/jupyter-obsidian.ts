@@ -53,6 +53,9 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.settings.displayServerRibbonIcon) {
 			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 		}
+		if (this.settings.displayFileRibbonIcon) {
+			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
+		}
 
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
@@ -271,9 +274,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 			this.fileRibbonIcon = null;
 		}
 		else {
-			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", (_event: MouseEvent) => {
-				// TODO : Implement the creation of a new Jupyter notebook file
-			});
+			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
 		}
 	}
 
@@ -425,6 +426,47 @@ export default class JupyterNotebookPlugin extends Plugin {
 
 	private async onJupyterExit(_env: JupyterEnvironment) {
 		await this.purgeJupyterCheckpoints();
+	}
+
+
+	/*=====================================================*/
+	/* Jupyter checkpoints management                      */
+	/*=====================================================*/
+
+	public async onFileRibbonIconClicked() {
+		await this.createJupyterNotebook(JupyterAbstractPath.fromRelative("/", true, this.app.vault));
+	}
+
+	private getDefaultNotebookFilename(): string {
+		const now = new Date();
+		const year = now.getFullYear();
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const day = String(now.getDate()).padStart(2, '0');
+		const hours = String(now.getHours()).padStart(2, '0');
+		const minutes = String(now.getMinutes()).padStart(2, '0');
+		const seconds = String(now.getSeconds()).padStart(2, '0');
+		return `Jupyter Notebook ${year}-${month}-${day}-${hours}-${minutes}-${seconds}.ipynb`;
+	}
+
+	private async createJupyterNotebook(folder: JupyterAbstractPath) {
+		// Check that the notebook is being created inside of the Obsidian vault
+		if (!folder.inVault()) {
+			throw new Error("Creating a new notebook can only be done within the vault.");
+		}
+
+		// Append the filename to the folder name
+		const file = folder.append(this.getDefaultNotebookFilename(), false);
+
+		// Check that the file does not already exist to avoid overwriting it
+		if (await this.app.vault.adapter.exists(file.getRelativePath() as string)) {
+			new Notice(`The file "${file.getRelativePath() as string}" already exists, creation was aborted to avoid overwriting it. Please try again.`);
+		}
+
+		// Create a Jupyter notebook with the minimum amount of content
+		await this.app.vault.adapter.write(
+			file.getRelativePath() as string,
+			`{"cells": [],"metadata": {"kernelspec": {"display_name": "","name": ""},"language_info": {"name": ""}},"nbformat": 4,"nbformat_minor": 5}`
+		);
 	}
 
 
