@@ -98,7 +98,7 @@ export class JupyterAbstractPath {
             absolute += "/";
         }
         else if (!isFolder && absolute.endsWith("/")) {
-            absolute.substring(0, absolute.length - 1);
+            absolute = absolute.substring(0, absolute.length - 1);
         }
         this.absolutePath = absolute;
 
@@ -110,6 +110,12 @@ export class JupyterAbstractPath {
             throw new Error("Invalid argument in JupyterAbstractPath constructor : `relative` must not be `null` if `isInVault` is set to `true`");
         }
         else {
+            if (isFolder && !relative.endsWith('/')) {
+                relative += '/';
+            }
+            else if (!isFolder && relative.endsWith('/')) {
+                relative = relative.substring(0, absolute.length - 1);
+            }
             this.relativePath = relative;
         }
 
