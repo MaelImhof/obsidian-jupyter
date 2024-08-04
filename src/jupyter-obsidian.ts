@@ -1,7 +1,7 @@
 import { FileSystemAdapter, Notice, Plugin, Tasks, Workspace, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
-import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, PythonExecutableType } from "./jupyter-settings";
+import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
 import { UpdateModal } from "./ui/jupyter-update-modal";
 import { rmdirSync } from "fs";
@@ -281,6 +281,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 		else {
 			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
 		}
+	}
+
+	public async setOpenCreatedFileMode(value: OpenCreatedNotebook) {
+		this.settings.openCreatedFileMode = value;
+		await this.saveSettings();
 	}
 
 	public async setJupyterTimeoutMs(value: number) {

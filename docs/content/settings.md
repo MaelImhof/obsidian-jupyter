@@ -98,6 +98,16 @@ Defines whether another ribbon icon (different from [[#Ribbon icon for server st
 This ribbon icon is independent from the server status one, meaning that it can be enabled whether the ribbon icon for server status is enabled or not, and vice-versa.
 
 Default value is yes (the ribbon icon is displayed).
+#### Open created notebooks
+
+Defines whether to immediately open new notebook files when they are created, and how to open them (in a new tab, in a detached window).
+
+Possible values are
+- **Do not open**, simply create the file without opening it
+- **Open in a new tab**, create the file and then open it in a new tab
+- **Open in a detached window**, create the file and open it in a detached window
+
+By default, new notebooks are opened in a new tab.
 ### Advanced
 #### Jupyter starting timeout
 

@@ -8,6 +8,12 @@ export enum PythonExecutableType {
     PATH = "path"
 }
 
+export enum OpenCreatedNotebook {
+    DONT = "dont-open",
+    TAB = "new-tab",
+    WINDOW = "detached-window"
+}
+
 export interface JupyterSettings {
     pythonExecutable: PythonExecutableType;
     pythonExecutablePath: string;
@@ -24,6 +30,7 @@ export interface JupyterSettings {
     displayServerRibbonIcon: boolean;
     useStatusNotices: boolean;
     displayFileRibbonIcon: boolean;
+    openCreatedFileMode: OpenCreatedNotebook,
     jupyterTimeoutMs: number;
     debugConsole: boolean;
 
@@ -42,6 +49,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     displayServerRibbonIcon: true,
     useStatusNotices: true,
     displayFileRibbonIcon: true,
+    openCreatedFileMode: OpenCreatedNotebook.TAB,
     jupyterTimeoutMs: 30000,
     debugConsole: false,
 
@@ -222,6 +230,19 @@ export class JupyterSettingsTab extends PluginSettingTab {
                         await this.plugin.setFileRibbonIconSetting(value);
                     }).bind(this))
             ).bind(this));
+        new Setting(this.containerEl)
+            .setName("Open created notebooks")
+            .setDesc("Whether to open a notebook directly when it is created, and how to open it.")
+            .addDropdown(((dropdown: DropdownComponent) => {
+                dropdown
+                    .addOption(OpenCreatedNotebook.DONT, "Do not open")
+                    .addOption(OpenCreatedNotebook.TAB, "Open in a new tab")
+                    .addOption(OpenCreatedNotebook.WINDOW, "Open in a detached window")
+                    .setValue(this.plugin.settings.openCreatedFileMode)
+                    .onChange((async (value: OpenCreatedNotebook) => {
+                        await this.plugin.setOpenCreatedFileMode(value);
+                    }).bind(this));
+            }).bind(this));
 
 
         /*=====================================================*/
