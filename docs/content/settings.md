@@ -98,6 +98,11 @@ Defines whether another ribbon icon (different from [[#Ribbon icon for server st
 This ribbon icon is independent from the server status one, meaning that it can be enabled whether the ribbon icon for server status is enabled or not, and vice-versa.
 
 Default value is yes (the ribbon icon is displayed).
+#### Folder context menu for new notebooks
+
+When right-clicking on a file or folder, Obsidian will offer some actions to the user that can be performed on this item. This setting defines whether Jupyter for Obsidian should add its own custom action to the list and offer the user to create a new Jupyter notebook when the user right-clicks on a folder.
+
+Default value is yes (the Jupyter context menu item will be available).
 #### Open created notebooks
 
 Defines whether to immediately open new notebook files when they are created, and how to open them (in a new tab, in a detached window).
