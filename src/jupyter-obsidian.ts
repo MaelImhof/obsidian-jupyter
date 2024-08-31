@@ -52,6 +52,23 @@ export default class JupyterNotebookPlugin extends Plugin {
 		if (this.startEnvOnceInitialized) {
 			this.toggleJupyter();
 		}
+
+		/*
+		 * The icon used is derived from `coreui`'s Jupyter SVG Vector icon :
+		 * https://www.svgrepo.com/svg/341956/jupyter
+		 * 
+		 * It was adjusted to be a custom icon in Obsidian :
+		 * - Removed the surrounding SVG tags
+		 * - Resized to fit a viewBox of "0 0 100 100"
+		 * - Added the fill="currentColor" property to adapt to Obsidian's theme
+		 * For more information about those modifications, see Obsidian's documentation :
+		 * https://docs.obsidian.md/Plugins/User+interface/Icons#Add+your+own+icon
+		 * 
+		 * Provided under the terms of the GPL license :
+		 * https://www.svgrepo.com/page/licensing/#GPL
+		 */
+		addIcon("jupyter-logo", `<path fill="currentColor" d="m 51.4537,74.98344 c -15.406714,0 -29.180954,-5.68784 -36.479994,-13.79248 2.83328,7.29904 7.71248,13.79248 14.187674,18.24 6.493446,4.46576 14.187686,6.8856 22.29232,6.8856 8.10464,0 15.82016,-2.41984 22.29232,-6.8856 C 80.239467,74.98344 85.100427,68.49 87.933707,61.19096 80.634667,69.29864 66.86042,74.98344 51.4537,74.98344 Z m 0,-53.5192 c 15.40672,0 29.180967,5.68784 36.480007,13.79248 -2.83328,-7.29904 -7.69424,-13.79248 -14.187687,-18.24 -6.8856,-4.86096 -14.57984,-7.29904 -22.29232,-7.29904 -8.107674,0 -15.798874,2.44112 -22.29232,6.8856 C 22.689226,21.46424 17.806986,27.54424 14.973706,35.25672 22.272746,26.7356 35.654826,21.46424 51.4537,21.46424 Z M 79.829067,2.02344 c -7.566567,0 -7.566567,11.33312 0,11.33312 7.56656,0 7.56656,-11.33312 0,-11.33312 z M 22.689226,83.89672 c -4.04016,0 -7.299046,3.25888 -7.299046,7.29904 0,4.02192 3.258886,7.2808 7.299046,7.2808 4.021914,0 7.280794,-3.25888 7.280794,-7.2808 0,-4.04016 -3.258874,-7.29904 -7.280794,-7.29904 z m -6.08,-72.96 c -5.414243,0 -5.414243,8.10768 0,8.10768 5.399034,0 5.399034,-8.10768 0,-8.10768 z" id="path1" style="stroke-width:3.04" />`);
+
 		if (this.settings.displayServerRibbonIcon) {
 			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
 		}
@@ -72,22 +89,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
 		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
-
-		/*
-		 * The icon used is derived from `coreui`'s Jupyter SVG Vector icon :
-		 * https://www.svgrepo.com/svg/341956/jupyter
-		 * 
-		 * It was adjusted to be a custom icon in Obsidian :
-		 * - Removed the surrounding SVG tags
-		 * - Resized to fit a viewBox of "0 0 100 100"
-		 * - Added the fill="currentColor" property to adapt to Obsidian's theme
-		 * For more information about those modifications, see Obsidian's documentation :
-		 * https://docs.obsidian.md/Plugins/User+interface/Icons#Add+your+own+icon
-		 * 
-		 * Provided under the terms of the GPL license :
-		 * https://www.svgrepo.com/page/licensing/#GPL
-		 */
-		addIcon("jupyter-logo", `<path fill="currentColor" d="m 51.4537,74.98344 c -15.406714,0 -29.180954,-5.68784 -36.479994,-13.79248 2.83328,7.29904 7.71248,13.79248 14.187674,18.24 6.493446,4.46576 14.187686,6.8856 22.29232,6.8856 8.10464,0 15.82016,-2.41984 22.29232,-6.8856 C 80.239467,74.98344 85.100427,68.49 87.933707,61.19096 80.634667,69.29864 66.86042,74.98344 51.4537,74.98344 Z m 0,-53.5192 c 15.40672,0 29.180967,5.68784 36.480007,13.79248 -2.83328,-7.29904 -7.69424,-13.79248 -14.187687,-18.24 -6.8856,-4.86096 -14.57984,-7.29904 -22.29232,-7.29904 -8.107674,0 -15.798874,2.44112 -22.29232,6.8856 C 22.689226,21.46424 17.806986,27.54424 14.973706,35.25672 22.272746,26.7356 35.654826,21.46424 51.4537,21.46424 Z M 79.829067,2.02344 c -7.566567,0 -7.566567,11.33312 0,11.33312 7.56656,0 7.56656,-11.33312 0,-11.33312 z M 22.689226,83.89672 c -4.04016,0 -7.299046,3.25888 -7.299046,7.29904 0,4.02192 3.258886,7.2808 7.299046,7.2808 4.021914,0 7.280794,-3.25888 7.280794,-7.2808 0,-4.04016 -3.258874,-7.29904 -7.280794,-7.29904 z m -6.08,-72.96 c -5.414243,0 -5.414243,8.10768 0,8.10768 5.399034,0 5.399034,-8.10768 0,-8.10768 z" id="path1" style="stroke-width:3.04" />`);
 
 		// Try to unload when Obsidian is closed by the user/the OS
 		this.app.workspace.on('quit', async (_tasks: Tasks) => {
