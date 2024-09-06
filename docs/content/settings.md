@@ -34,6 +34,15 @@ Whether to use Jupyter Lab or Jupyter Notebook.
 Note that if the Jupyter server is running while you change this setting, you will need to stop it and start it again for the new value to take effect.
 
 Default value is Jupyter Lab.
+#### Simple Interface
+
+Jupyter Lab provides an appearance setting called `Simple Interface`. It hides unnecessary UI elements for the user to concentrate on the file that is being edited. No Jupyter tabs, no sidebars, just the file.
+
+This setting defines whether notebooks should be opened in `Simple Interface` mode by default.
+
+**Has no effect** if the [[#Jupyter environment type|environment type]] is Jupyter Notebook.
+
+Default value is enabled (meaning all notebooks will be opened in `Simple Interface` mode).
 #### Delete Jupyter checkpoints
 
 When working with notebooks, Jupyter generates checkpoint files. This creates a new `.ipynb_checkpoints` directory in each directory where you have a notebook opened. It becomes messy very fast.

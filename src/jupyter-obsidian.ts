@@ -25,7 +25,8 @@ export default class JupyterNotebookPlugin extends Plugin {
 		DEFAULT_SETTINGS.pythonExecutable === PythonExecutableType.PYTHON ? "python" : DEFAULT_SETTINGS.pythonExecutablePath,
 		DEFAULT_SETTINGS.jupyterTimeoutMs,
 		DEFAULT_SETTINGS.jupyterEnvType,
-		null
+		null,
+		DEFAULT_SETTINGS.useSimpleMode
 	);
 	private envProperlyInitialized = false;
 	private startEnvOnceInitialized = false;
@@ -228,6 +229,12 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.settings.jupyterEnvType = value;
 		await this.saveSettings();
 		this.env.setType(value);
+	}
+
+	public async setUseSimpleMode(value: boolean) {
+		this.settings.useSimpleMode = value;
+		await this.saveSettings();
+		this.env.setUseSimpleMode(value);
 	}
 
 	public async setDeleteCheckpoints(value: boolean) {
