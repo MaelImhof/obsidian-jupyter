@@ -60,7 +60,15 @@ export class JupyterEnvironment {
     private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(this.onJupyterTimeout.bind(this), this.jupyterTimeoutMs, true);
     private jupyerTimedOut: boolean = false;
 
-    constructor(private readonly path: string, private printDebug: boolean, private pythonExecutable: string, private jupyterTimeoutMs: number, private type: JupyterEnvironmentType, private customConfigFolderPath: string|null) { }
+    constructor(
+        private readonly path: string,
+        private printDebug: boolean,
+        private pythonExecutable: string,
+        private jupyterTimeoutMs: number,
+        private type: JupyterEnvironmentType,
+        private customConfigFolderPath: string|null,
+        private useSimpleMode: boolean
+    ) { }
 
     public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
         this.events.on(event, callback);
@@ -181,6 +189,14 @@ export class JupyterEnvironment {
         return this.customConfigFolderPath;
     }
 
+    public setUseSimpleMode(value: boolean) {
+        this.useSimpleMode = value;
+    }
+
+    public getUseSimpleMode(): boolean {
+        return this.useSimpleMode;
+    }
+
     public getJupyterTimeoutMs(): number {
         return this.jupyterTimeoutMs;
     }
@@ -214,14 +230,25 @@ export class JupyterEnvironment {
     }
 
     /**
-     * @param file The path of the file relative to the Jupyter environment's working directy.
+     * @param file The path of the file relative to the Jupyter environment's working directory.
      */
     public getFileUrl(file: string): string|null {
         if (!this.isRunning()) {
             return null;
         }
 
-        return `http://localhost:${this.jupyterPort}/${this.runningType === JupyterEnvironmentType.NOTEBOOK ? "notebooks" : "lab/tree"}/${file}?token=${this.jupyterToken}`;
+        return "http://localhost:" + this.jupyterPort + "/"
+            + (
+                this.runningType === JupyterEnvironmentType.NOTEBOOK
+                ? "notebooks"
+                : (
+                    this.useSimpleMode
+                    ? "doc/tree"
+                    : "lab/tree"
+                )
+            ) + "/"
+            + file
+            + "?token=" + this.jupyterToken;
     }
 
     public exit() {

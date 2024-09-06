@@ -21,6 +21,7 @@ export interface JupyterSettings {
     pythonExecutablePath: string;
     startJupyterAuto: boolean;
     jupyterEnvType: JupyterEnvironmentType;
+    useSimpleMode: boolean;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
     /**
@@ -45,6 +46,7 @@ export const DEFAULT_SETTINGS: JupyterSettings = {
     pythonExecutablePath: "",
     startJupyterAuto: true,
     jupyterEnvType: JupyterEnvironmentType.LAB,
+    useSimpleMode: true,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
     checkpointsFolder: "",
@@ -149,6 +151,16 @@ export class JupyterSettingsTab extends PluginSettingTab {
                             new JupyterRestartModal(this.plugin, "Jupyter environment type").open();
                         }
                     }).bind(this));
+            }).bind(this));
+        new Setting(this.containerEl)
+            .setName("Simple interface")
+            .setDesc("Whether to use Jupyter's Simple Interface mode when opening a notebook.")
+            .addToggle(((toggle: ToggleComponent) => {
+                toggle
+                    .setValue(this.plugin.settings.useSimpleMode)
+                    .onChange((async (value: boolean) => {
+                        await this.plugin.setUseSimpleMode(value);
+                    }).bind(this))
             }).bind(this));
         new Setting(this.containerEl)
             .setName("Delete Jupyter checkpoints")
