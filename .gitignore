@@ -36,6 +36,7 @@ appearance.json
 core-plugins.json
 core-plugins-migration.json
 workspace.json
+workspace-mobile.json
 
 # Do not include plugins settings
 data.json

@@ -1,11 +1,12 @@
-import { FileSystemAdapter, Menu, MenuItem, Notice, PaneType, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, Menu, MenuItem, Notice, PaneType, Platform, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
 import { JupyterModal } from "./ui/jupyter-modal";
 import { UpdateModal } from "./ui/jupyter-update-modal";
-import { existsSync, rmdirSync } from "fs";
 import { JupyterAbstractPath } from "./utils/jupyter-path";
+
+let fs: typeof import('node:fs') | undefined;
 
 export default class JupyterNotebookPlugin extends Plugin {
 
@@ -37,6 +38,20 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
     async onload() {
+		/*
+		 * When using Obsidian Sync, because the plugin is not compatible with mobile platform
+		 * (isDesktopOnly set to true in the manifest), the plugin's settings got deleted by Obsidian Sync.
+		 * 
+		 * To avoid this behavior, the plugin's manifest has been changed for isDesktopOnly to be false
+		 * and simply skip setup if mobile platform is detected.
+		 */
+		if (Platform.isMobile) {
+			new Notice("Jupyter for Obsidian is not supported on mobile and has skipped initialization.", 0);
+			return;
+		}
+
+		fs = await import('node:fs');
+
 		await this.loadSettings();
 		this.env.printDebugMessages(this.settings.debugConsole);
 		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
@@ -100,6 +115,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	async onunload() {
+		// See the beginning of onload for explanations
+		if (Platform.isMobile) {
+			return;
+		}
+
 		await this.saveSettings();
 		// Kill the Jupyter Notebook process
 		this.env.exit();
@@ -560,7 +580,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 		}
 
 		// Check that the folder exists
-		if (!existsSync(checkpointsFolder.getAbsolutePath())) {
+		if (fs === undefined || !fs.existsSync(checkpointsFolder.getAbsolutePath())) {
 			return;
 		}
 
@@ -588,7 +608,7 @@ export default class JupyterNotebookPlugin extends Plugin {
 				this.app.vault.adapter.rmdir(checkpointsFolder.getRelativePath() as string, true);
 			}
 			else {
-				rmdirSync(checkpointsFolder.getAbsolutePath(), { recursive: true });
+				fs.rmdirSync(checkpointsFolder.getAbsolutePath(), { recursive: true });
 			}
 		}
 	}
