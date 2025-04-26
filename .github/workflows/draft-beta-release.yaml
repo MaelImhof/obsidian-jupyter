@@ -91,10 +91,11 @@ jobs:
           NOTES: ${{ env.NOTES }}
         # Create a draft release with GitHub CLI
         run: |
+          cp manifest-beta.json manifest.json
           gh release create "$TAG" \
             --title="Obsidian Jupyter v$TAG" \
             --draft \
             --prerelease \
             --notes "$NOTES" \
             --generate-notes \
-            main.js manifest-beta.json styles.css
+            main.js manifest.json styles.css
