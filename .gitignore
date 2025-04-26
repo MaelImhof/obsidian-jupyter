@@ -22,9 +22,9 @@ node_modules
 # Docs
 # =========================
 
-# Exclude generated docs
-docs/public
-docs/quartz/.quartz-cache
+# Exclude Vitepress generated files
+docs/.vitepress/dist
+docs/.vitepress/cache
 
 # =========================
 # Obsidian
