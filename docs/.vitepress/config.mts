@@ -7,6 +7,7 @@ export default defineConfig({
 	head: [
 		["link", { rel: "icon", type: "image/png", href: "/images/logo.png" }],
 	],
+	cleanUrls: true,
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [
@@ -14,6 +15,21 @@ export default defineConfig({
 			{ text: "Getting Started", link: "/guide/" },
 			{ text: "Contribute", link: "/contribute/" },
 		],
+
+		editLink: {
+			pattern:
+				"https://github.com/MaelImhof/obsidian-jupyter/edit/dev/docs/:path",
+			text: "Suggest changes to this page",
+		},
+
+		search: {
+			provider: "local",
+		},
+
+		logo: {
+			src: "/images/logo.png",
+			alt: "",
+		},
 
 		sidebar: [
 			{
