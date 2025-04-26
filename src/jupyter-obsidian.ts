@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Menu, MenuItem, Notice, PaneType, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
+import { FileSystemAdapter, MarkdownPostProcessorContext, Menu, MenuItem, Notice, PaneType, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
 import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
 import { EmbeddedJupyterView } from "./ui/jupyter-view";
 import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
@@ -97,6 +97,41 @@ export default class JupyterNotebookPlugin extends Plugin {
 		});
 
 		this.announceUpdate();
+
+		console.debug("[Jupyter for Obsidian] Plugin loaded, registering markdown post-processor.");
+		this.registerMarkdownPostProcessor((async (element: HTMLElement, context: MarkdownPostProcessorContext) => {
+			console.group("[Jupyter for Obsidian] Markdown post-processor");
+			console.debug("Processing element", element);
+			console.debug("Processing context", context);
+			const embeddedItems: NodeListOf<Element>|[HTMLElement] = element.querySelectorAll(".internal-embed");
+			console.debug("Found", embeddedItems.length, "embedded items");
+			console.debug("Items", embeddedItems);
+			for (const item of embeddedItems) {
+				const filename = item.getAttribute("src")?.split("#")[0];
+				if (!filename) continue;
+
+				// Check if the file is a Jupyter notebook
+				if (!filename.endsWith(".ipynb")) continue;
+
+				// Replace item with a paragraph
+				// @ts-ignore for "webview"
+				const title = document.createElement("div");
+				title.addClass("embed-title", "markdown-embed-title");
+				title.innerText = filename;
+				const webviewEl = document.createElement("webview");
+				webviewEl.setAttribute("allowpopups", "");
+				// @ts-ignore for this.app.appId
+				webviewEl.setAttribute("partition", "persist:surfing-vault-" + this.app.appId);
+				webviewEl.setAttribute("src", this.env.getFileUrl(filename) as string);
+				console.debug("Adding title element", title);
+				item.parentElement.insertBefore(title, item);
+				console.debug("Adding webview element", webviewEl);
+				item.parentElement.insertBefore(webviewEl, item);
+				console.debug("Removing item", item);
+				item.remove();
+			}
+			console.groupEnd();
+		}).bind(this));
 	}
 
 	async onunload() {
