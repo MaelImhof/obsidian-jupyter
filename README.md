@@ -9,6 +9,6 @@ For more information, please refer to the documentation website [https://jupyter
 > [!NOTE]
 > `main.js`, `manifest.json` and `versions.json` are in `test-vault/.obsidian/plugins/jupyter/`. They are copied to the root directory when running `npm run build`.
 
-- **`docs`** contains a [Quartz](https://github.com/jackyzha0/quartz) installation used to generate the documentation website.
+- **`docs`** contains a [Vitepress](https://vitepress.dev/) installation used to generate the documentation website.
 - **`src`** contains the TypeScript code for the plugin.
 - **`test-vault`** contains a test Obsidian vault. Run `npm run dev` to watch for changes and update the plugin in this vault when needed. The hot-reload plugin is also installed, such that the Jupyter plugin will automatically be reloaded.

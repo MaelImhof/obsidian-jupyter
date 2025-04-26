@@ -31,6 +31,10 @@ export default defineConfig({
 			alt: "",
 		},
 
+		outline: {
+			level: [2, 3],
+		},
+
 		sidebar: [
 			{
 				text: "User Guide",
