@@ -100,7 +100,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	}
 
 	async onunload() {
-		await this.saveSettings();
 		// Kill the Jupyter Notebook process
 		this.env.exit();
 		await this.purgeJupyterCheckpoints();
