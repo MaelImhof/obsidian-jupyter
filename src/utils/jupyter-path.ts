@@ -1,7 +1,8 @@
 import { FileSystemAdapter, normalizePath, Vault } from "obsidian";
 
 /**
- * Retrieves the root absolute (system) path of the provided vault.
+ * Retrieves the root absolute (system) path of the provided vault. Ensures the returned
+ * value ends with '/'.
  * 
  * @param vault The vault to get the root path of.
  * 
@@ -9,7 +10,11 @@ import { FileSystemAdapter, normalizePath, Vault } from "obsidian";
  */
 export function getVaultRootPath(vault: Vault): string {
     if (vault.adapter instanceof FileSystemAdapter) {
-        return vault.adapter.getBasePath();
+        let basePath = vault.adapter.getBasePath();
+        if (!basePath.endsWith('/')) {
+            basePath += '/';
+        }
+        return basePath;
     }
     else {
         throw new Error("Invalid environment : Jupyter for Obsidian needs a FileSystemAdapter instance to work with absolute paths.");
