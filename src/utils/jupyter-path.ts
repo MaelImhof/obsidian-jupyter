@@ -24,10 +24,12 @@ export function getVaultRootPath(vault: Vault): string {
 /**
  * Checks whether the provided path lies within the provided Obsidian vault.
  * 
- * @param path The path of the file or folder that is or is not in the vault.
+ * @param path The path of the file or folder that is or is not in the vault. If it is a folder,
+ *   whether the path ends with '/' or not is unimportant.
  * @param vault The reference vault to look into.
  * 
- * @returns True if the provided path lies within the provided vault, false otherwise.
+ * @returns True if the provided path lies within the provided vault, false otherwise. Note that
+ *   "within" includes the root directory of the vault itself.
  * 
  * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
  */
@@ -37,11 +39,10 @@ export function inVault(path: string|JupyterAbstractPath, vault: Vault, root: st
     }
 
     if (root === null) {
-        return path.startsWith(getVaultRootPath(vault));
+        root = getVaultRootPath(vault);
     }
-    else {
-        return path.startsWith(root);
-    }
+
+    return path.startsWith(root) || path + "/" === root;
 }
 
 /**
