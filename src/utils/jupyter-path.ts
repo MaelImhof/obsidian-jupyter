@@ -176,6 +176,12 @@ export class JupyterAbstractPath {
      * Returns a new path instance with the provided relative path appended to the original
      * path contained by the current instance. Does not modify the current instance.
      * 
+     * Not that this method will not check whether the resulting path is within the vault or not.
+     * Thus, if you have a vault with a root path of "/home/obsidian/", and you call this method
+     * on a path "/home/" to append "obsidian/" to it, the resulting path would semantically be
+     * within the vault, but the method will not check that and will return a path that indicates
+     * it is not in the vault.
+     * 
      * @param relativePath The path to add to the end of the current instance's path.
      * @param isFolder     Whether the represented path of the new instance will be a folder
      *                     (or not, in which case it is a file).
