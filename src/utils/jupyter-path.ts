@@ -120,7 +120,7 @@ export class JupyterAbstractPath {
                 relative += '/';
             }
             else if (!isFolder && relative.endsWith('/')) {
-                relative = relative.substring(0, absolute.length - 1);
+                relative = relative.substring(0, relative.length - 1);
             }
             this.relativePath = relative;
         }
