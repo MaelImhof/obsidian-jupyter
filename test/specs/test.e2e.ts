@@ -1,4 +1,8 @@
-import { browser } from '@wdio/globals'
+import { expect } from '@wdio/globals';
+import type { Browser } from 'webdriverio';
+import { ObsidianBrowserCommands } from 'wdio-obsidian-service';
+
+declare const browser: Browser & ObsidianBrowserCommands;
 
 describe('Test my plugin', function() {
     before(async function() {
