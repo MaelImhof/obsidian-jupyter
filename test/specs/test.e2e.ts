@@ -39,7 +39,7 @@ async function getFileTreeItem(path: string, browser: Browser & ObsidianBrowserC
 }
 
 describe('Jupyter for Obsidian', function() {
-    before(async function() {
+    beforeEach(async function() {
         await browser.reloadObsidian({vault: "test-vault"});
     });
 
@@ -91,5 +91,23 @@ describe('Jupyter for Obsidian', function() {
 
         // Check that the notebook entry in the tree is still marked as active
         expect((await notebook.getAttribute('class')).includes('is-active')).toBe(true);
+    });
+
+    it('creates new notebooks from a ribbon icon', async () => {
+        // Find the ribbon icon to create a new notebook
+        const createNotebookButton = await browser.$('.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]');
+        expect(createNotebookButton).toExist();
+
+        // Create a new notebook by clicking the button
+        await createNotebookButton.click();
+
+        // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
+        // If this plugin makes it past 2099, the test will break, but I'm not too worried about that
+        const newNotebook = await browser.$('.workspace-tab-header.is-active[aria-label^="Jupyter Notebook 20"]');
+        await newNotebook.waitForExist({ timeout: 5000 });
+        
+        // Check that the new notebook is opened and Jupyter is started
+        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is Starting"]');
+        startingServerStatus.waitForExist({ timeout: 2000 });
     });
 })
