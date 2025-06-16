@@ -1,4 +1,7 @@
 import * as path from "path"
+// Ignore the fact that this line is unused, it is required to import the types
+// and make TypeScript happy
+import { ObsidianBrowserCommands } from 'wdio-obsidian-service';
 
 export const config: WebdriverIO.Config = {
     runner: 'local',
