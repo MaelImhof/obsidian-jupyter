@@ -11,7 +11,7 @@ export const config: WebdriverIO.Config = {
     ],
 
     // How many instances of Obsidian should be launched in parallel
-    maxInstances: 1,
+    maxInstances: 8,
 
     capabilities: [{
         browserName: 'obsidian',
