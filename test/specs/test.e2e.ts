@@ -22,7 +22,7 @@ async function getFileTreeItem(path: string, browser: Browser & ObsidianBrowserC
             expect(isFolder).toBe(true);
             currentPath += '/';
             // Get the parent element of the current item
-            const parent = await item.parentElement();
+            const parent = item.parentElement();
             // Ensure the parent is not collapsed
             const isCollapsed = (await parent.getAttribute('class')).includes('is-collapsed');
             if (isCollapsed) {
@@ -54,8 +54,8 @@ describe('Jupyter for Obsidian', function() {
         await notebook.click();
 
         // Expect the server status to change to starting
-        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is Starting"]');
-        startingServerStatus.waitForExist({ timeout: 2000 });
+        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        await startingServerStatus.waitForExist({ timeout: 2000 });
 
         // Wait for a tab to open with the notebook
         const tabHeader = await browser.$('.workspace-tab-header.is-active[aria-label="Valid notebook.ipynb"]');
@@ -103,11 +103,57 @@ describe('Jupyter for Obsidian', function() {
 
         // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
         // If this plugin makes it past 2099, the test will break, but I'm not too worried about that
-        const newNotebook = await browser.$('.workspace-tab-header.is-active[aria-label^="Jupyter Notebook 20"]');
+        const newNotebook = await browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
         await newNotebook.waitForExist({ timeout: 5000 });
-        
+
+        // Expect the server status to change to starting
+        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        await startingServerStatus.waitForExist({ timeout: 5000 });
+    });
+
+    it('creates new notebooks from the context menu', async () => {
+        // Get the tree item of a folder
+        const folder = await getFileTreeItem("Notebook creation", browser);
+        expect(folder).toExist();
+
+        // Ensure the folder is expanded by clicking it
+        const parent = folder.parentElement();
+        const isCollapsed = (await parent.getAttribute('class')).includes('is-collapsed');
+        if (isCollapsed) {
+            await folder.click();
+        }
+
+        // Right-click on the folder to open the context menu
+        await folder.click({ button: 2 });
+
+        // Find the context menu item to create a new notebook
+        const contextMenuItem = await browser.$(
+          '.menu-item.tappable:has(> .menu-item-icon > svg.jupyter-logo)'
+        );
+        expect(contextMenuItem).toExist();
+
+        // Click the context menu item to create a new notebook
+        await contextMenuItem.click();
+
+        // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
+        const newNotebook = await browser.$('.nav-file-title[data-path^="Notebook creation/Jupyter Notebook 20"]');
+        await newNotebook.waitForExist({ timeout: 5000 });
+
         // Check that the new notebook is opened and Jupyter is started
-        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is Starting"]');
-        startingServerStatus.waitForExist({ timeout: 2000 });
+        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        await startingServerStatus.waitForExist({ timeout: 2000 });
+    });
+
+    it('creates new notebooks from the command palette', async () => {
+        // Create a new notebook using the command palette
+        await browser.executeObsidianCommand('jupyter:jupyter-create-notebook');
+
+        // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
+        const newNotebook = await browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
+        await newNotebook.waitForExist({ timeout: 5000 });
+
+        // Check that the new notebook is opened and Jupyter is started
+        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        await startingServerStatus.waitForExist({ timeout: 2000 });
     });
 })
