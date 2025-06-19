@@ -5,14 +5,14 @@ import { getFileTreeItem } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
-describe('New Jupyter notebook can be created', function() {
-    before(async () => {
+describe('Jupyter notebook creation', function() {
+    beforeEach(async () => {
         await obsidianPage.resetVault();
     });
     
-    it('using a ribbon icon', async () => {
+    it('is available through a ribbon icon', async () => {
         // Find the ribbon icon to create a new notebook
-        const createNotebookButton = await browser.$('.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]');
+        const createNotebookButton = browser.$('.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]');
         expect(createNotebookButton).toExist();
 
         // Create a new notebook by clicking the button
@@ -20,15 +20,15 @@ describe('New Jupyter notebook can be created', function() {
 
         // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
         // If this plugin makes it past 2099, the test will break, but I'm not too worried about that
-        const newNotebook = await browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
+        const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
         await newNotebook.waitForExist({ timeout: 5000 });
 
         // Expect the server status to change to starting
-        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        const startingServerStatus = browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
         await startingServerStatus.waitForExist({ timeout: 5000 });
     });
 
-    it('using the context menu', async () => {
+    it('is available through the context menu', async () => {
         // Get the tree item of a folder
         const folder = await getFileTreeItem("Notebook creation", browser);
         expect(folder).toExist();
@@ -44,7 +44,7 @@ describe('New Jupyter notebook can be created', function() {
         await folder.click({ button: 2 });
 
         // Find the context menu item to create a new notebook
-        const contextMenuItem = await browser.$(
+        const contextMenuItem = browser.$(
           '.menu-item.tappable:has(> .menu-item-icon > svg.jupyter-logo)'
         );
         expect(contextMenuItem).toExist();
@@ -53,24 +53,24 @@ describe('New Jupyter notebook can be created', function() {
         await contextMenuItem.click();
 
         // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
-        const newNotebook = await browser.$('.nav-file-title[data-path^="Notebook creation/Jupyter Notebook 20"]');
+        const newNotebook = browser.$('.nav-file-title[data-path^="Notebook creation/Jupyter Notebook 20"]');
         await newNotebook.waitForExist({ timeout: 5000 });
 
         // Check that the new notebook is opened and Jupyter is started
-        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        const startingServerStatus = browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
         await startingServerStatus.waitForExist({ timeout: 2000 });
     });
 
-    it('using the command palette', async () => {
+    it('is available through the command palette', async () => {
         // Create a new notebook using the command palette
         await browser.executeObsidianCommand('jupyter:jupyter-create-notebook');
 
         // Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
-        const newNotebook = await browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
+        const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
         await newNotebook.waitForExist({ timeout: 5000 });
 
         // Check that the new notebook is opened and Jupyter is started
-        const startingServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
+        const startingServerStatus = browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
         await startingServerStatus.waitForExist({ timeout: 2000 });
     });
 })
