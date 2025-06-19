@@ -5,7 +5,7 @@ import { getFileTreeItem, resetVaultWithSettings } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
-describe('Jupyter notebook creation', function() {
+describe('Jupyter notebook creation', async () => {
     beforeEach(async () => {
         await resetVaultWithSettings(obsidianPage, {});
     });
@@ -104,4 +104,4 @@ describe('Jupyter notebook creation', function() {
         );
         await newNotebookContextMenuItem.waitForExist({ timeout: 100, reverse: true });
     });
-})
+});

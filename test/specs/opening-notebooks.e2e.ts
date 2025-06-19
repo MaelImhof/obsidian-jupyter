@@ -5,8 +5,8 @@ import { getFileTreeItem } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
-describe('Jupyter for Obsidian', function() {
-    it('can open valid notebook', async () => {
+describe('Opening a Jupyter notebook', async () => {
+    it('opens an Obsidian tab and displays a webview', async () => {
         // Expect the current server status to be idle (or exited)
         const idleServerStatus = await browser.$('.side-dock-ribbon-action[aria-label="Start Jupyter Server"]');
         expect(idleServerStatus).toExist();
@@ -55,4 +55,4 @@ describe('Jupyter for Obsidian', function() {
         // Check that the notebook entry in the tree is still marked as active
         expect((await notebook.getAttribute('class')).includes('is-active')).toBe(true);
     });
-})
+});
