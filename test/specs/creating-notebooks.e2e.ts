@@ -1,13 +1,13 @@
 import { expect } from '@wdio/globals';
 import type { Browser } from 'webdriverio';
 import { ObsidianBrowserCommands, obsidianPage } from 'wdio-obsidian-service';
-import { getFileTreeItem } from './test-utils';
+import { getFileTreeItem, resetVaultWithSettings } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
 describe('Jupyter notebook creation', function() {
     beforeEach(async () => {
-        await obsidianPage.resetVault();
+        await resetVaultWithSettings(obsidianPage, {});
     });
     
     it('is available through a ribbon icon', async () => {
@@ -72,5 +72,36 @@ describe('Jupyter notebook creation', function() {
         // Check that the new notebook is opened and Jupyter is started
         const startingServerStatus = browser.$('.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]');
         await startingServerStatus.waitForExist({ timeout: 2000 });
+    });
+
+    it('can be removed from ribbon icons', async() => {
+        await resetVaultWithSettings(obsidianPage, { displayFileRibbonIcon: false });
+
+        // Check that the ribbon icon to create a new notebook is not present
+        const createNotebookButton = browser.$('.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]');
+        await createNotebookButton.waitForExist({ timeout: 5000, reverse: true });
+    });
+
+    it('can be removed from context menu', async() => {
+        await resetVaultWithSettings(obsidianPage, { displayFolderContextMenuItem: false });
+
+        // Get the tree item of a folder
+        const folder = await getFileTreeItem("Notebook creation", browser);
+        expect(folder).toExist();
+
+        // Right-click on the folder to open the context menu
+        await folder.click({ button: 2 });
+
+        // Check that the context menu is displayed
+        const newNoteContextMenuItem = browser.$(
+          '.menu-item.tappable:has(> .menu-item-icon > svg.lucide-edit)'
+        );
+        expect(newNoteContextMenuItem).toExist();
+
+        // Check that the context menu item to create a new notebook is not present
+        const newNotebookContextMenuItem = browser.$(
+          '.menu-item.tappable:has(> .menu-item-icon > svg.jupyter-logo)'
+        );
+        await newNotebookContextMenuItem.waitForExist({ timeout: 100, reverse: true });
     });
 })
