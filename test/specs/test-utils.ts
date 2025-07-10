@@ -2,6 +2,7 @@ import { expect } from '@wdio/globals';
 import type { Browser, ChainablePromiseElement } from 'webdriverio';
 import { ObsidianBrowserCommands, ObsidianPage } from 'wdio-obsidian-service';
 import { DEFAULT_SETTINGS, JupyterSettings } from '../bridge';
+import { lstat } from 'fs/promises';
 
 /**
  * Finds the element representing the specified file or folder in the Obsidian file tree.
@@ -71,4 +72,23 @@ export async function resetVaultWithSettings(obsidianPage: ObsidianPage, value: 
     await obsidianPage.resetVault('test-vault', {
         [(await obsidianPage.getConfigDir()) + "/plugins/jupyter/data.json"]: JSON.stringify(finalSettings),
     });
+}
+
+/**
+ * Checks whether a folder exists at the specified path.
+ */
+export async function folderExists(path): Promise<boolean> {
+  try {
+    const stats = await lstat(path);
+    if (stats.isDirectory()) {
+        // The path exists and is a directory
+        return true;
+    } else {
+      // Exists but is not a directory
+      return false;
+    }
+  } catch (err) {
+    // Does not exist or is not accessible
+    return false;
+  }
 }
