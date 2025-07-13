@@ -1,7 +1,8 @@
 import { FileSystemAdapter, normalizePath, Vault } from "obsidian";
 
 /**
- * Retrieves the root absolute (system) path of the provided vault.
+ * Retrieves the root absolute (system) path of the provided vault. Ensures the returned
+ * value ends with '/'.
  * 
  * @param vault The vault to get the root path of.
  * 
@@ -9,7 +10,11 @@ import { FileSystemAdapter, normalizePath, Vault } from "obsidian";
  */
 export function getVaultRootPath(vault: Vault): string {
     if (vault.adapter instanceof FileSystemAdapter) {
-        return vault.adapter.getBasePath();
+        let basePath = vault.adapter.getBasePath();
+        if (!basePath.endsWith('/')) {
+            basePath += '/';
+        }
+        return basePath;
     }
     else {
         throw new Error("Invalid environment : Jupyter for Obsidian needs a FileSystemAdapter instance to work with absolute paths.");
@@ -19,10 +24,12 @@ export function getVaultRootPath(vault: Vault): string {
 /**
  * Checks whether the provided path lies within the provided Obsidian vault.
  * 
- * @param path The path of the file or folder that is or is not in the vault.
+ * @param path The path of the file or folder that is or is not in the vault. If it is a folder,
+ *   whether the path ends with '/' or not is unimportant.
  * @param vault The reference vault to look into.
  * 
- * @returns True if the provided path lies within the provided vault, false otherwise.
+ * @returns True if the provided path lies within the provided vault, false otherwise. Note that
+ *   "within" includes the root directory of the vault itself.
  * 
  * @throws If the provided vault does not have a FileSystemAdapter instance attached to it.
  */
@@ -32,11 +39,10 @@ export function inVault(path: string|JupyterAbstractPath, vault: Vault, root: st
     }
 
     if (root === null) {
-        return path.startsWith(getVaultRootPath(vault));
+        root = getVaultRootPath(vault);
     }
-    else {
-        return path.startsWith(root);
-    }
+
+    return path.startsWith(root) || path + "/" === root;
 }
 
 /**
@@ -114,7 +120,7 @@ export class JupyterAbstractPath {
                 relative += '/';
             }
             else if (!isFolder && relative.endsWith('/')) {
-                relative = relative.substring(0, absolute.length - 1);
+                relative = relative.substring(0, relative.length - 1);
             }
             this.relativePath = relative;
         }
@@ -169,6 +175,12 @@ export class JupyterAbstractPath {
     /**
      * Returns a new path instance with the provided relative path appended to the original
      * path contained by the current instance. Does not modify the current instance.
+     * 
+     * Not that this method will not check whether the resulting path is within the vault or not.
+     * Thus, if you have a vault with a root path of "/home/obsidian/", and you call this method
+     * on a path "/home/" to append "obsidian/" to it, the resulting path would semantically be
+     * within the vault, but the method will not check that and will return a path that indicates
+     * it is not in the vault.
      * 
      * @param relativePath The path to add to the end of the current instance's path.
      * @param isFolder     Whether the represented path of the new instance will be a folder

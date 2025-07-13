@@ -27,6 +27,12 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 # =========================
+# Tests Cache
+# =========================
+
+.obsidian-cache
+
+# =========================
 # Obsidian
 # =========================
 

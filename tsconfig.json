@@ -1,6 +1,12 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "types": [
+      "vitest/globals",
+      "@wdio/globals/types",
+      "@wdio/mocha-framework",
+      "wdio-obsidian-service"
+    ],
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
@@ -10,7 +16,7 @@
     "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
-	"strictNullChecks": true,
+    "strictNullChecks": true,
     "lib": [
       "DOM",
       "ES5",
