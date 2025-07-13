@@ -99,6 +99,77 @@ export default class JupyterNotebookPlugin extends Plugin {
 		this.announceUpdate();
 	}
 
+	async onExternalSettingsChange() {
+		const oldSettings = { ...this.settings };
+		await this.loadSettings();
+		
+		// TODO: Update settings in a cleaner way
+
+		if (oldSettings.pythonExecutable !== this.settings.pythonExecutable) {
+			this.setPythonExecutable(this.settings.pythonExecutable);
+		}
+
+		if (oldSettings.pythonExecutablePath !== this.settings.pythonExecutablePath) {
+			this.setPythonExecutablePath(this.settings.pythonExecutablePath);
+		}
+
+		if (oldSettings.startJupyterAuto !== this.settings.startJupyterAuto) {
+			this.setStartJupyterAuto(this.settings.startJupyterAuto);
+		}
+
+		if (oldSettings.jupyterEnvType !== this.settings.jupyterEnvType) {
+			this.setJupyterEnvType(this.settings.jupyterEnvType);
+		}
+
+		if (oldSettings.useSimpleMode !== this.settings.useSimpleMode) {
+			this.setUseSimpleMode(this.settings.useSimpleMode);
+		}
+
+		if (oldSettings.deleteCheckpoints !== this.settings.deleteCheckpoints) {
+			this.setDeleteCheckpoints(this.settings.deleteCheckpoints);
+		}
+
+		if (oldSettings.moveCheckpointsToTrash !== this.settings.moveCheckpointsToTrash) {
+			this.setMoveCheckpointsToTrash(this.settings.moveCheckpointsToTrash);
+		}
+
+		if (oldSettings.checkpointsFolder !== this.settings.checkpointsFolder) {
+			this.setCheckpointsFolder(this.settings.checkpointsFolder);
+		}
+
+		if (oldSettings.updatePopup !== this.settings.updatePopup) {
+			this.setUpdatePopup(this.settings.updatePopup);
+		}
+
+		if (oldSettings.displayServerRibbonIcon !== this.settings.displayServerRibbonIcon) {
+			this.setServerRibbonIconSetting(this.settings.displayServerRibbonIcon);
+		}
+
+		if (oldSettings.useStatusNotices !== this.settings.useStatusNotices) {
+			this.setStatusNoticesSetting(this.settings.useStatusNotices);
+		}
+
+		if (oldSettings.displayFileRibbonIcon !== this.settings.displayFileRibbonIcon) {
+			this.setFileRibbonIconSetting(this.settings.displayFileRibbonIcon);
+		}
+
+		if (oldSettings.displayFolderContextMenuItem !== this.settings.displayFolderContextMenuItem) {
+			this.setFolderContextMenuSetting(this.settings.displayFolderContextMenuItem);
+		}
+
+		if (oldSettings.openCreatedFileMode !== this.settings.openCreatedFileMode) {
+			this.setOpenCreatedFileMode(this.settings.openCreatedFileMode);
+		}
+
+		if (oldSettings.jupyterTimeoutMs !== this.settings.jupyterTimeoutMs) {
+			this.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
+		}
+
+		if (oldSettings.debugConsole !== this.settings.debugConsole) {
+			this.setDebugConsole(this.settings.debugConsole);
+		}
+	}
+
 	async onunload() {
 		// Kill the Jupyter Notebook process
 		this.env.exit();
