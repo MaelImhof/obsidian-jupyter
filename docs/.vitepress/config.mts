@@ -1,9 +1,14 @@
 import { defineConfig } from "vitepress";
+import llmstxt from 'vitepress-plugin-llms';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
 	title: "Jupyter for Obsidian",
 	description: "Open Jupyter notebooks directly inside of Obsidian.",
+	vite: {
+		// @ts-ignore because Plugin<any> is not assignable to Plugin<any> for some reason
+		plugins: [llmstxt()]
+	},
 	head: [
 		["link", { rel: "icon", type: "image/png", href: "/images/logo.png" }],
 	],
