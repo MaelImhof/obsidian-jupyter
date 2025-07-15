@@ -14,7 +14,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
 	public settings: JupyterSettings = DEFAULT_SETTINGS;
-	private serverRibbonIcon: HTMLElement|null = null;
 	private fileRibbonIcon: HTMLElement|null = null;
 
 	private onFileContextMenu = this.onFileContextMenuOpened.bind(this);
@@ -37,22 +36,11 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
     async onload() {
-		await this.loadSettings();
-		this.env.printDebugMessages(this.settings.debugConsole);
-		this.env.setPythonExecutable(this.settings.pythonExecutable === PythonExecutableType.PYTHON ? "python" : this.settings.pythonExecutablePath);
-		this.env.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
-		this.env.setType(this.settings.jupyterEnvType);
 		if (this.settings.deleteCheckpoints) {
 			this.env.setCustomConfigFolderPath(this.getPluginFolder().getAbsolutePath());
 		}
-		this.env.on(JupyterEnvironmentEvent.CHANGE, this.showStatusMessage.bind(this));
-		this.env.on(JupyterEnvironmentEvent.CHANGE, this.updateRibbon.bind(this));
-		this.env.on(JupyterEnvironmentEvent.ERROR, this.onEnvironmentError.bind(this));
 		this.env.on(JupyterEnvironmentEvent.EXIT, this.onJupyterExit.bind(this));
 		this.envProperlyInitialized = true;
-		if (this.startEnvOnceInitialized) {
-			this.toggleJupyter();
-		}
 
 		/*
 		 * The icon used is derived from `coreui`'s Jupyter SVG Vector icon :
@@ -70,9 +58,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		 */
 		addIcon("jupyter-logo", `<path fill="currentColor" d="m 51.4537,74.98344 c -15.406714,0 -29.180954,-5.68784 -36.479994,-13.79248 2.83328,7.29904 7.71248,13.79248 14.187674,18.24 6.493446,4.46576 14.187686,6.8856 22.29232,6.8856 8.10464,0 15.82016,-2.41984 22.29232,-6.8856 C 80.239467,74.98344 85.100427,68.49 87.933707,61.19096 80.634667,69.29864 66.86042,74.98344 51.4537,74.98344 Z m 0,-53.5192 c 15.40672,0 29.180967,5.68784 36.480007,13.79248 -2.83328,-7.29904 -7.69424,-13.79248 -14.187687,-18.24 -6.8856,-4.86096 -14.57984,-7.29904 -22.29232,-7.29904 -8.107674,0 -15.798874,2.44112 -22.29232,6.8856 C 22.689226,21.46424 17.806986,27.54424 14.973706,35.25672 22.272746,26.7356 35.654826,21.46424 51.4537,21.46424 Z M 79.829067,2.02344 c -7.566567,0 -7.566567,11.33312 0,11.33312 7.56656,0 7.56656,-11.33312 0,-11.33312 z M 22.689226,83.89672 c -4.04016,0 -7.299046,3.25888 -7.299046,7.29904 0,4.02192 3.258886,7.2808 7.299046,7.2808 4.021914,0 7.280794,-3.25888 7.280794,-7.2808 0,-4.04016 -3.258874,-7.29904 -7.280794,-7.29904 z m -6.08,-72.96 c -5.414243,0 -5.414243,8.10768 0,8.10768 5.399034,0 5.399034,-8.10768 0,-8.10768 z" id="path1" style="stroke-width:3.04" />`);
 
-		if (this.settings.displayServerRibbonIcon) {
-			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
-		}
 		if (this.settings.displayFileRibbonIcon) {
 			this.fileRibbonIcon = this.addRibbonIcon("jupyter-logo", "Create Jupyter Notebook", this.onFileRibbonIconClicked.bind(this));
 		}
@@ -87,8 +72,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			}).bind(this)
 		});
 
-		this.registerView("jupyter-view", (leaf) => new EmbeddedJupyterView(leaf, this));
-		this.registerExtensions(["ipynb"], "jupyter-view");
 		this.addSettingTab(new JupyterSettingsTab(this.app, this));
 
 		// Try to unload when Obsidian is closed by the user/the OS
@@ -97,77 +80,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		});
 
 		this.announceUpdate();
-	}
-
-	async onExternalSettingsChange() {
-		const oldSettings = { ...this.settings };
-		await this.loadSettings();
-		
-		// TODO: Update settings in a cleaner way
-
-		if (oldSettings.pythonExecutable !== this.settings.pythonExecutable) {
-			this.setPythonExecutable(this.settings.pythonExecutable);
-		}
-
-		if (oldSettings.pythonExecutablePath !== this.settings.pythonExecutablePath) {
-			this.setPythonExecutablePath(this.settings.pythonExecutablePath);
-		}
-
-		if (oldSettings.startJupyterAuto !== this.settings.startJupyterAuto) {
-			this.setStartJupyterAuto(this.settings.startJupyterAuto);
-		}
-
-		if (oldSettings.jupyterEnvType !== this.settings.jupyterEnvType) {
-			this.setJupyterEnvType(this.settings.jupyterEnvType);
-		}
-
-		if (oldSettings.useSimpleMode !== this.settings.useSimpleMode) {
-			this.setUseSimpleMode(this.settings.useSimpleMode);
-		}
-
-		if (oldSettings.deleteCheckpoints !== this.settings.deleteCheckpoints) {
-			this.setDeleteCheckpoints(this.settings.deleteCheckpoints);
-		}
-
-		if (oldSettings.moveCheckpointsToTrash !== this.settings.moveCheckpointsToTrash) {
-			this.setMoveCheckpointsToTrash(this.settings.moveCheckpointsToTrash);
-		}
-
-		if (oldSettings.checkpointsFolder !== this.settings.checkpointsFolder) {
-			this.setCheckpointsFolder(this.settings.checkpointsFolder);
-		}
-
-		if (oldSettings.updatePopup !== this.settings.updatePopup) {
-			this.setUpdatePopup(this.settings.updatePopup);
-		}
-
-		if (oldSettings.displayServerRibbonIcon !== this.settings.displayServerRibbonIcon) {
-			this.setServerRibbonIconSetting(this.settings.displayServerRibbonIcon);
-		}
-
-		if (oldSettings.useStatusNotices !== this.settings.useStatusNotices) {
-			this.setStatusNoticesSetting(this.settings.useStatusNotices);
-		}
-
-		if (oldSettings.displayFileRibbonIcon !== this.settings.displayFileRibbonIcon) {
-			this.setFileRibbonIconSetting(this.settings.displayFileRibbonIcon);
-		}
-
-		if (oldSettings.displayFolderContextMenuItem !== this.settings.displayFolderContextMenuItem) {
-			this.setFolderContextMenuSetting(this.settings.displayFolderContextMenuItem);
-		}
-
-		if (oldSettings.openCreatedFileMode !== this.settings.openCreatedFileMode) {
-			this.setOpenCreatedFileMode(this.settings.openCreatedFileMode);
-		}
-
-		if (oldSettings.jupyterTimeoutMs !== this.settings.jupyterTimeoutMs) {
-			this.setJupyterTimeoutMs(this.settings.jupyterTimeoutMs);
-		}
-
-		if (oldSettings.debugConsole !== this.settings.debugConsole) {
-			this.setDebugConsole(this.settings.debugConsole);
-		}
 	}
 
 	async onunload() {
@@ -201,23 +113,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			case JupyterEnvironmentStatus.RUNNING:
 				this.env.exit();
 				break;
-		}
-	}
-
-	/**
-	 * Restarts the Jupyter server if it is running.
-	 * 
-	 * If Jupyter is not running, it is simply started.
-	 */
-	public async restartJupyter() {
-		if (this.env.getStatus() === JupyterEnvironmentStatus.EXITED) {
-			this.toggleJupyter();
-		}
-		else {
-			this.env.once(JupyterEnvironmentEvent.EXIT, (() => {
-				this.toggleJupyter();
-			}).bind(this));
-			this.env.exit();
 		}
 	}
 
@@ -262,49 +157,10 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 
 	private async loadSettings() {
-		this.settings = Object.assign(DEFAULT_SETTINGS, await this.loadData());
 		if (this.settings.checkpointsFolder !== "" && !this.settings.checkpointsFolder.endsWith('/')) {
 			this.settings.checkpointsFolder += '/';
 			await this.saveSettings();
 		}
-	}
-
-	public async setPythonExecutable(value: PythonExecutableType) {
-		this.settings.pythonExecutable = value;
-		await this.saveSettings();
-		switch (value) {
-			case PythonExecutableType.PYTHON:
-				this.env.setPythonExecutable("python");
-				break;
-			case PythonExecutableType.PATH:
-				this.env.setPythonExecutable(this.settings.pythonExecutablePath);
-				break;
-		}
-	}
-
-	public async setPythonExecutablePath(value: string) {
-		this.settings.pythonExecutablePath = value;
-		await this.saveSettings();
-		if (this.settings.pythonExecutable === PythonExecutableType.PATH) {
-			this.env.setPythonExecutable(value);
-		}
-	}
-
-	public async setStartJupyterAuto(value: boolean) {
-		this.settings.startJupyterAuto = value;
-		await this.saveSettings();
-	}
-
-	public async setJupyterEnvType(value: JupyterEnvironmentType) {
-		this.settings.jupyterEnvType = value;
-		await this.saveSettings();
-		this.env.setType(value);
-	}
-
-	public async setUseSimpleMode(value: boolean) {
-		this.settings.useSimpleMode = value;
-		await this.saveSettings();
-		this.env.setUseSimpleMode(value);
 	}
 
 	public async setDeleteCheckpoints(value: boolean) {
@@ -344,24 +200,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
-	public async setServerRibbonIconSetting(value: boolean) {
-		this.settings.displayServerRibbonIcon = value;
-		await this.saveSettings();
-		if (!value) {
-			this.serverRibbonIcon?.remove();
-			this.serverRibbonIcon = null;
-		}
-		else {
-			this.serverRibbonIcon = this.addRibbonIcon("monitor-play", "Start Jupyter Server", this.toggleJupyter.bind(this));
-			this.updateRibbon(this.env);
-		}
-	}
-
-	public async setStatusNoticesSetting(value: boolean) {
-		this.settings.useStatusNotices = value;
-		await this.saveSettings();
-	}
-
 	public async setFileRibbonIconSetting(value: boolean) {
 		this.settings.displayFileRibbonIcon = value;
 		await this.saveSettings();
@@ -390,18 +228,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
-	public async setJupyterTimeoutMs(value: number) {
-		this.settings.jupyterTimeoutMs = value;
-		await this.saveSettings();
-		this.env.setJupyterTimeoutMs(value);
-	}
-
-	public async setDebugConsole(value: boolean) {
-		this.settings.debugConsole = value;
-		await this.saveSettings();
-		this.env.printDebugMessages(this.settings.debugConsole);
-	}
-
 	public async saveSettings() {
 		await this.saveData(this.settings);
 	}
@@ -410,126 +236,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 	/*=====================================================*/
 	/* Jupyter Environment event (on change, error, exit)  */
 	/*=====================================================*/
-
-	private showStatusMessage() {
-		if (!this.settings.useStatusNotices) {
-			return;
-		}
-		
-		switch (this.env.getStatus()) {
-			case JupyterEnvironmentStatus.STARTING:
-				new Notice("Jupyter Server is starting");
-				break;
-			case JupyterEnvironmentStatus.RUNNING:
-				new Notice("Jupyter Server is now running");
-				break;
-			case JupyterEnvironmentStatus.EXITED:
-				new Notice("Jupyter Server has exited");
-				break;
-		}
-	
-	}
-
-	private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError) {
-		if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
-			new JupyterModal(
-				this.app,
-				"Jupyter Timeout",
-				[
-					"The Jupyter server took too long to start.",
-					"You can set in the settings the maximum time the plugin will wait for the server to start.",
-					"Your current timeout is set to " + (this.settings.jupyterTimeoutMs / 1000) + " second(s).",
-					this.settings.jupyterTimeoutMs < 15000 ? "This is a very short timeout and might not be enough for the server to start. Please try increasing it and see if the error disappears." : "This timeout seems reasonable, hence the problem might be elsewhere depending on your specific situation."
-				],
-				[
-					{
-						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-timeout", "_blank"); },
-						closeOnClick: false
-					}
-				]
-			).open();
-		}
-		else if (error === JupyterEnvironmentError.UNABLE_TO_START_JUPYTER) {
-			new JupyterModal(
-				this.app,
-				"Couldn't start Jupyter",
-				[
-					"Jupyter could not even be started.",
-					"Please check your Python executable and make sure Jupyter is installed in the corresponding environment.",
-					"Use the button below to open the troubleshooting guide."
-				],
-				[
-					{
-						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-could-not-be-spawned", "_blank"); },
-						closeOnClick: false
-					}
-				]
-			)
-		}
-		else if (error === JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR) {
-			new JupyterModal(
-				this.app,
-				"Jupyter crashed",
-				[
-					"Jupyter crashed while starting",
-					"Use the button below to open the troubleshooting guide.",
-					"Here is the last log message from Jupyter:",
-					this.env.getLastLog()
-				],
-				[
-					{
-						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-crashed", "_blank"); },
-						closeOnClick: false
-					}
-				]
-			).open();
-		}
-		else {
-			new JupyterModal(
-				this.app,
-				"Jupyter exited",
-				[
-					"Jupyter crashed while starting but did not encounter an error.",
-					"This is a very rare case and might be due to an 'exit()' statement that got lost in your Jupyter configuration.",
-					"Use the button below to open the troubleshooting guide.",
-					"Here is the last log message from Jupyter:",
-					this.env.getLastLog()
-				],
-				[
-					{
-						text: "Open troubleshooting guide",
-						onClick: () => { window.open("https://jupyter.mael.im/troubleshooting#jupyter-process-exited", "_blank"); },
-						closeOnClick: false
-					}
-				]
-			).open();
-		
-		}
-	}
-
-	private async updateRibbon(env: JupyterEnvironment) {
-		if (this.serverRibbonIcon === null || !this.settings.displayServerRibbonIcon) {
-			return;
-		}
-
-		switch (env.getStatus()) {
-			case JupyterEnvironmentStatus.STARTING:
-				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-dot");
-				setTooltip(this.serverRibbonIcon as HTMLElement, "Jupyter Server is starting");
-				break;
-			case JupyterEnvironmentStatus.RUNNING:
-				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-stop");
-				setTooltip(this.serverRibbonIcon as HTMLElement, "Stop Jupyter Server");
-				break;
-			case JupyterEnvironmentStatus.EXITED:
-				setIcon(this.serverRibbonIcon as HTMLElement, "monitor-play");
-				setTooltip(this.serverRibbonIcon as HTMLElement, "Start Jupyter Server");
-				break;
-		}
-	}
 
 	private async onJupyterExit(_env: JupyterEnvironment) {
 		await this.purgeJupyterCheckpoints();

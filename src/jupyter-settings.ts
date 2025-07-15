@@ -70,39 +70,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
     display() {
         this.containerEl.empty();
 
-
-        /*=====================================================*/
-	    /* Python settings                                     */
-	    /*=====================================================*/
-
-        new Setting(this.containerEl)
-            .setName("Python")
-            .setHeading();
-        new Setting(this.containerEl)
-            .setName("Python executable to use")
-            .setDesc("Choose whether to simply use the `python` command or a specific path. Note that you will need to restart your Jupyter server if it is running before this setting is applied.")
-            .addDropdown(((dropdown: DropdownComponent) => {
-                dropdown
-                    .addOption(PythonExecutableType.PYTHON, "`python` command")
-                    .addOption(PythonExecutableType.PATH, "Specified executable path")
-                    .setValue(this.plugin.settings.pythonExecutable)
-                    .onChange((async (value: PythonExecutableType) => {
-                        await this.plugin.setPythonExecutable(value);
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Python executable path")
-            .setDesc("The path to the Python executable to use. This setting is only used if the previous setting is set to `Specified executable path`.")
-            .addText(((text: TextComponent) => {
-                text
-                    .setPlaceholder("Path to Python executable")
-                    .setValue(this.plugin.settings.pythonExecutablePath)
-                    .onChange((async (value: string) => {
-                        await this.plugin.setPythonExecutablePath(value);
-                    }).bind(this));
-            }).bind(this));
-
-
         /*=====================================================*/
 	    /* Jupyter settings                                    */
 	    /*=====================================================*/
@@ -110,58 +77,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName("Jupyter")
             .setHeading();
-        new Setting(this.containerEl)
-            .setName("Server running")
-            .setDesc("Start or stop the Jupyter server.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED)
-                    .onChange(((value: boolean) => {
-                        if (this.plugin.env.getStatus() === JupyterEnvironmentStatus.STARTING && !value) {
-                            toggle.setValue(true);
-                            new Notice("Can't change status while Jupyter server is starting.");
-                        }
-                        else {
-                            this.plugin.toggleJupyter();
-                        }
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
-            .setName("Start Jupyter automatically")
-            .setDesc("If a .ipynb file is opened, a Jupyter server will be started automatically if needed.")
-            .addToggle(((toggle: ToggleComponent) => {
-                toggle
-                    .setValue(this.plugin.settings.startJupyterAuto)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setStartJupyterAuto(value);
-                    }).bind(this))
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Jupyter environment type")
-            .setDesc("Select whether to start Jupyter Notebook or Jupyter Lab.")
-            .addDropdown(((dropdown: DropdownComponent) => {
-                dropdown
-                    .addOption(JupyterEnvironmentType.LAB, "Jupyter Lab")
-                    .addOption(JupyterEnvironmentType.NOTEBOOK, "Jupyter Notebook")
-                    .setValue(this.plugin.settings.jupyterEnvType)
-                    .onChange((async (value: JupyterEnvironmentType) => {
-                        await this.plugin.setJupyterEnvType(value);
-
-                        if (this.plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
-                            new JupyterRestartModal(this.plugin, "Jupyter environment type").open();
-                        }
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Simple interface")
-            .setDesc("Whether to use Jupyter's Simple Interface mode when opening a notebook.")
-            .addToggle(((toggle: ToggleComponent) => {
-                toggle
-                    .setValue(this.plugin.settings.useSimpleMode)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setUseSimpleMode(value);
-                    }).bind(this))
-            }).bind(this));
         new Setting(this.containerEl)
             .setName("Delete Jupyter checkpoints")
             .setDesc("To keep your Obsidian vault clean. Does not work retroactively. Restarting Jupyter is required for the setting to take effect.")
@@ -217,26 +132,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     }).bind(this));
             }).bind(this));
         new Setting(this.containerEl)
-            .setName("Ribbon icon for server status")
-            .setDesc("Whether to display a ribbon icon that indicates the server status (exited, starting, running), which can be used to start/stop the server.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.displayServerRibbonIcon)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setServerRibbonIconSetting(value);
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
-            .setName("Display status notices")
-            .setDesc("If enabled, short messages will pop up when the Jupyter server is starting, running or exits.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.useStatusNotices)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setStatusNoticesSetting(value);
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
             .setName("Ribbon icon for new notebooks")
             .setDesc("Whether to display a ribbon icon that creates a blank Jupyter notebook when clicked.")
             .addToggle(((toggle: ToggleComponent) =>
@@ -270,37 +165,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .onChange((async (value: OpenCreatedNotebook) => {
                         await this.plugin.setOpenCreatedFileMode(value);
                     }).bind(this));
-            }).bind(this));
-
-
-        /*=====================================================*/
-	    /* Advanced settings                                   */
-	    /*=====================================================*/
-
-        new Setting(this.containerEl)
-            .setName("Advanced")
-            .setHeading();
-        new Setting(this.containerEl)
-            .setName("Jupyter starting timeout")
-            .setDesc("To avoid Jupyter being stuck in the starting phase, a timeout is set by default. You can set how many seconds to wait before killing the Jupyter server. Set to 0 to disable the timeout. Please note that a timeout too small might prevent Jupyter from ever starting.")
-            .addSlider(((slider: SliderComponent) => {
-                slider
-                    .setLimits(0, 60, 1)
-                    .setValue(this.plugin.settings.jupyterTimeoutMs / 1000)
-                    .setDynamicTooltip()
-                    .onChange((async (value: number) => {
-                        await this.plugin.setJupyterTimeoutMs(value * 1000);
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Print Jupyter output to Obsidian console.")
-            .setDesc("When you start Jupyter through a terminal, it prints a bunch of messages. You can get those messages in the Obsidian console by enabling this setting and opening the console (see key binds on the Obsidian website). This can help you if your Jupyter server does not start for some reason.")
-            .addToggle(((toggle: ToggleComponent) => {
-                toggle
-                    .setValue(this.plugin.settings.debugConsole)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setDebugConsole(value);
-                    }).bind(this))
             }).bind(this));
     }
 }
