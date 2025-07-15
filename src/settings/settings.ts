@@ -1,5 +1,6 @@
 import { CreateNotebooksSettings, DEFAULT_CREATE_NOTEBOOKS_SETTINGS } from "@/features/create-notebooks/create-notebooks-settings";
 import { DEFAULT_OPEN_NOTEBOOKS_SETTINGS, OpenNotebooksSettings } from "@/features/open-notebooks/open-notebooks-settings";
+import { DEFAULT_UPDATE_MODAL_SETTINGS, UpdateModalSettings } from "@/features/update-modal/update-modal-settings";
 import { EventEmitter } from "stream";
 
 /**
@@ -12,7 +13,11 @@ type Flatten<T> = {
 /**
  * Regroups all settings from all features into a single type.
  */
-export interface Settings extends Flatten<OpenNotebooksSettings & CreateNotebooksSettings> {}
+export interface Settings extends Flatten<
+    OpenNotebooksSettings
+    & CreateNotebooksSettings
+    & UpdateModalSettings
+> {}
 
 /**
  * Regroups all default setting values from all features into a
@@ -20,7 +25,8 @@ export interface Settings extends Flatten<OpenNotebooksSettings & CreateNotebook
  */
 export const DEFAULT_SETTINGS: Settings = {
     ...DEFAULT_OPEN_NOTEBOOKS_SETTINGS,
-    ...DEFAULT_CREATE_NOTEBOOKS_SETTINGS
+    ...DEFAULT_CREATE_NOTEBOOKS_SETTINGS,
+    ...DEFAULT_UPDATE_MODAL_SETTINGS
 }
 
 export type SettingChangeEvent<T> =

@@ -5,6 +5,7 @@ import { OpenNotebooksFeature } from "@/features/open-notebooks/open-notebooks-f
 import { JupyterSettingsTab } from "@/settings/settings-tab";
 import { JupyterEnvironment, PythonExecutableType } from "@/services/jupyter-environment";
 import { CreateNotebooksFeature } from "./features/create-notebooks/create-notebooks-feature";
+import { UpdateModalFeature } from "./features/update-modal/update-modal-feature";
 
 /**
  * Main class for the Obsidian plugin that integrates Jupyter functionality.
@@ -71,7 +72,8 @@ export default class JupyterForObsidian extends Plugin {
         // actually do the work for registering commands, settings, ...
         this.enabledFeatures.push(
             new OpenNotebooksFeature(),
-            new CreateNotebooksFeature()
+            new CreateNotebooksFeature(),
+            new UpdateModalFeature()
         );
 
         // Register the settings UI for the plugin
@@ -96,7 +98,7 @@ export default class JupyterForObsidian extends Plugin {
         // Kill the Jupyter Notebook process
         this.env.exit();
         this.enabledFeatures.forEach(feature => {
-            feature.onunload();
+            feature.onunload?.();
         });
     }
 

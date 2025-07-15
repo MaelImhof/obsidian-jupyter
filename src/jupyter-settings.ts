@@ -8,14 +8,6 @@ export enum PythonExecutableType {
     PATH = "path"
 }
 
-export enum OpenCreatedNotebook {
-    DONT = "dont-open",
-    CURRENT_TAB = "current-tab",
-    NEW_TAB = "new-tab",
-    SPLIT = "split",
-    WINDOW = "detached-window"
-}
-
 export interface JupyterSettings {
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
@@ -24,18 +16,11 @@ export interface JupyterSettings {
      * is performed, and '/' is added at the end if needed.
      */
     checkpointsFolder: string;
-    updatePopup: boolean;
-
-    // These are not for the user to modify
-    knownVersion: string;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
     checkpointsFolder: "",
-    updatePopup: true,
-
-    knownVersion: ""
 };
 
 export class JupyterSettingsTab extends PluginSettingTab {
@@ -86,25 +71,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.checkpointsFolder)
                     .onChange((async (value: string) => {
                         await this.plugin.setCheckpointsFolder(value);
-                    }).bind(this));
-            }).bind(this));
-
-
-        /*=====================================================*/
-	    /* Plugin customization settings                       */
-	    /*=====================================================*/
-
-        new Setting(this.containerEl)
-            .setName("Plugin customization")
-            .setHeading();
-        new Setting(this.containerEl)
-            .setName("Update popup")
-            .setDesc("When the plugin is updated, a popup is shown with what changes were made.")
-            .addToggle(((toggle: ToggleComponent) => {
-                toggle
-                    .setValue(this.plugin.settings.updatePopup)
-                    .onChange(((value: boolean) => {
-                        void this.plugin.setUpdatePopup(value);
                     }).bind(this));
             }).bind(this));
     }

@@ -1,8 +1,6 @@
-import { FileSystemAdapter, Menu, MenuItem, Notice, PaneType, Plugin, TAbstractFile, TFile, TFolder, Tasks, WorkspaceLeaf, addIcon, normalizePath, setIcon, setTooltip } from "obsidian";
-import { JupyterEnvironment, JupyterEnvironmentError, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
-import { EmbeddedJupyterView } from "./ui/jupyter-view";
-import { DEFAULT_SETTINGS, JupyterSettings, JupyterSettingsTab, OpenCreatedNotebook, PythonExecutableType } from "./jupyter-settings";
-import { JupyterModal } from "./ui/jupyter-modal";
+import { FileSystemAdapter, Notice, Plugin, normalizePath } from "obsidian";
+import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
+import { DEFAULT_SETTINGS, JupyterSettings, PythonExecutableType } from "./jupyter-settings";
 import { UpdateModal } from "./ui/jupyter-update-modal";
 import { existsSync, rmdirSync } from "fs";
 import { JupyterAbstractPath } from "./utils/jupyter-path";
@@ -35,8 +33,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 			this.env.setCustomConfigFolderPath(this.getPluginFolder().getAbsolutePath());
 		}
 		this.env.on(JupyterEnvironmentEvent.EXIT, this.onJupyterExit.bind(this));
-
-		this.announceUpdate();
 	}
 
 	async onunload() {
@@ -60,41 +56,6 @@ export default class JupyterNotebookPlugin extends Plugin {
 				this.env.exit();
 				break;
 		}
-	}
-
-
-	/*=====================================================*/
-	/* UI Events (ribbon icon, server setting)             */
-	/*=====================================================*/
-
-	/**
-	 * Checks whether the plugin has been updated and displays a
-	 * popup message if it has.
-	 * 
-	 * Strongly inspired from the QuickAdd implementation :
-	 * https://github.com/chhoumann/quickadd/blob/08f269393c3cec5bf0c1d64a79d7999afd0a35a9/src/main.ts#L210
-	 */
-	private announceUpdate() {
-		const currentVersion = this.manifest.version;
-		const knownVersion = this.settings.knownVersion;
-
-		// The version setting hasn't been set yet, the plugin has just been installed
-		if (knownVersion === "") {
-			return;
-		}
-
-		// The current version has already been announced
-		if (knownVersion === currentVersion) {
-			return;
-		}
-
-		this.settings.knownVersion = currentVersion;
-		void this.saveSettings();
-
-		if (!this.settings.updatePopup) return;
-
-		const updateModal = new UpdateModal(this.app, this, knownVersion, currentVersion);
-		updateModal.open();
 	}
 
 

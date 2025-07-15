@@ -17,5 +17,5 @@ export interface IFeature {
      * 
      * If the plugin instance is needed to perform the cleanup, it must be stored during the `onload` method.
      */
-    onunload(): void;
+    onunload?(): void;
 }
