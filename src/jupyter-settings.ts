@@ -1,6 +1,6 @@
-import { App, DropdownComponent, Notice, PluginSettingTab, Setting, SliderComponent, TextComponent, ToggleComponent } from "obsidian";
+import { App, DropdownComponent, PluginSettingTab, Setting, TextComponent, ToggleComponent } from "obsidian";
 import JupyterNotebookPlugin from "./jupyter-obsidian";
-import { JupyterEnvironmentStatus, JupyterEnvironmentType } from "./jupyter-env";
+import { JupyterEnvironmentStatus } from "./jupyter-env";
 import { JupyterRestartModal } from "./ui/jupyter-restart-modal";
 
 export enum PythonExecutableType {
@@ -17,11 +17,6 @@ export enum OpenCreatedNotebook {
 }
 
 export interface JupyterSettings {
-    pythonExecutable: PythonExecutableType;
-    pythonExecutablePath: string;
-    startJupyterAuto: boolean;
-    jupyterEnvType: JupyterEnvironmentType;
-    useSimpleMode: boolean;
     deleteCheckpoints: boolean;
     moveCheckpointsToTrash: boolean;
     /**
@@ -30,34 +25,15 @@ export interface JupyterSettings {
      */
     checkpointsFolder: string;
     updatePopup: boolean;
-    displayServerRibbonIcon: boolean;
-    useStatusNotices: boolean;
-    displayFileRibbonIcon: boolean;
-    displayFolderContextMenuItem: boolean;
-    openCreatedFileMode: OpenCreatedNotebook,
-    jupyterTimeoutMs: number;
-    debugConsole: boolean;
 
     // These are not for the user to modify
     knownVersion: string;
 };
 export const DEFAULT_SETTINGS: JupyterSettings = {
-    pythonExecutable: PythonExecutableType.PYTHON,
-    pythonExecutablePath: "",
-    startJupyterAuto: true,
-    jupyterEnvType: JupyterEnvironmentType.LAB,
-    useSimpleMode: true,
     deleteCheckpoints: false,
     moveCheckpointsToTrash: true,
     checkpointsFolder: "",
     updatePopup: true,
-    displayServerRibbonIcon: true,
-    useStatusNotices: true,
-    displayFileRibbonIcon: true,
-    displayFolderContextMenuItem: true,
-    openCreatedFileMode: OpenCreatedNotebook.CURRENT_TAB,
-    jupyterTimeoutMs: 30000,
-    debugConsole: false,
 
     knownVersion: ""
 };
@@ -129,41 +105,6 @@ export class JupyterSettingsTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.updatePopup)
                     .onChange(((value: boolean) => {
                         void this.plugin.setUpdatePopup(value);
-                    }).bind(this));
-            }).bind(this));
-        new Setting(this.containerEl)
-            .setName("Ribbon icon for new notebooks")
-            .setDesc("Whether to display a ribbon icon that creates a blank Jupyter notebook when clicked.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.displayFileRibbonIcon)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setFileRibbonIconSetting(value);
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
-            .setName("Folder context menu for new notebooks")
-            .setDesc("If enabled, when you right-click on a folder, one of the actions will be to create a new Jupyter notebook in that folder.")
-            .addToggle(((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.displayFolderContextMenuItem)
-                    .onChange((async (value: boolean) => {
-                        await this.plugin.setFolderContextMenuSetting(value);
-                    }).bind(this))
-            ).bind(this));
-        new Setting(this.containerEl)
-            .setName("Open created notebooks")
-            .setDesc("Whether to open a notebook directly when it is created, and how to open it.")
-            .addDropdown(((dropdown: DropdownComponent) => {
-                dropdown
-                    .addOption(OpenCreatedNotebook.DONT, "Do not open")
-                    .addOption(OpenCreatedNotebook.CURRENT_TAB, "Open in the current tab (default)")
-                    .addOption(OpenCreatedNotebook.NEW_TAB, "Open in a new tab")
-                    .addOption(OpenCreatedNotebook.SPLIT, "Open in a new split tab")
-                    .addOption(OpenCreatedNotebook.WINDOW, "Open in a detached window")
-                    .setValue(this.plugin.settings.openCreatedFileMode)
-                    .onChange((async (value: OpenCreatedNotebook) => {
-                        await this.plugin.setOpenCreatedFileMode(value);
                     }).bind(this));
             }).bind(this));
     }
