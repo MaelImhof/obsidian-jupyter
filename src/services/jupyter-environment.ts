@@ -194,7 +194,7 @@ export class JupyterEnvironment {
 
 		// If the Jupyter environment was set to start automatically, start it now.
 		if (this.startJupyterOnLoad) {
-			this.start();
+			await this.start();
 		}
 	}
 
