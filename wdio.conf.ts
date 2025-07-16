@@ -11,7 +11,7 @@ export const config: WebdriverIO.Config = {
     ],
 
     // How many instances of Obsidian should be launched in parallel
-    maxInstances: 1,
+    maxInstances: 8,
 
     capabilities: [{
         browserName: 'obsidian',
@@ -37,7 +37,7 @@ export const config: WebdriverIO.Config = {
 
     mochaOpts: {
         ui: 'bdd',
-        timeout: 240000,
+        timeout: 120000,
         // You can set mocha settings like "retry" and "bail"
     },
 
