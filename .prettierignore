@@ -1,0 +1,7 @@
+# Only format the source code and the tests
+*
+!src
+!src/**
+
+!test
+!test/**
