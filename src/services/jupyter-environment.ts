@@ -1,5 +1,5 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
-import { EventEmitter } from "events";
+import Emittery, { UnsubscribeFunction } from "emittery";
 import { Debouncer, debounce } from "obsidian";
 import { delimiter as path_delimiter } from "path";
 
@@ -56,12 +56,18 @@ export enum JupyterEnvironmentError {
     JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
+/** Type of an event callback depending on the event. */
+type JupyterEnvironmentEventCallback<T extends JupyterEnvironmentEvent, R = void> =
+    T extends JupyterEnvironmentEvent.ERROR
+        ? (args: [JupyterEnvironment, JupyterEnvironmentError]) => R
+        : (env: JupyterEnvironment) => R;
+
 export class JupyterEnvironment {
     private jupyterProcess: ChildProcessWithoutNullStreams|null = null;
     private jupyterLog: string[] = [];
     private jupyterPort: number|null = null;
     private jupyterToken: string|null = null;
-    private events: EventEmitter = new EventEmitter();
+    private events: Emittery = new Emittery();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
     private aboutToStart: boolean = false;
     private runningType: JupyterEnvironmentType|null = null;
@@ -103,15 +109,43 @@ export class JupyterEnvironment {
         private useSimpleMode: boolean
     ) { }
 
-    public on(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
-        this.events.on(event, callback);
+    /**
+     * Subscribe to one or more events.
+     * 
+     * Using the same listener multiple times for the same event will result
+     * in only one method call per emitted event.
+     * 
+     * @returns An unsubscribe method.
+     */
+    public on<T extends JupyterEnvironmentEvent>(
+        event: T,
+        callback: JupyterEnvironmentEventCallback<T>
+    ): UnsubscribeFunction {
+        return this.events.on(event, callback);
     }
 
-    public off(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
+    /** Remove one or more event subscriptions. */
+    public off<T extends JupyterEnvironmentEvent>(
+        event: T,
+        callback: JupyterEnvironmentEventCallback<T>
+    ): void {
         this.events.off(event, callback);
     }
 
-    public once(event: JupyterEnvironmentEvent, callback: (env: JupyterEnvironment) => void) {
+    /**
+     * Subscribe to one or more events only once. It will be unsubscribed
+     * after the first event that matches the predicate (if provided).
+     * 
+     * @param event The event name to subscribe to.
+     * @param callback The callback function to invoke when the event is
+     *   emitted. Should return a boolean indicating whether the listener
+     *   should be removed (if the returned value is true, the listener is
+     *   removed and won't be called again).
+     */
+    public once<T extends JupyterEnvironmentEvent>(
+        event: T,
+        callback: JupyterEnvironmentEventCallback<T, boolean>
+    ): void {
         this.events.once(event, callback);
     }
 
@@ -134,7 +168,7 @@ export class JupyterEnvironment {
      * server before the plugin is fully loaded, the starting will be delayed
      * until the plugin is done loading.
      */
-    public endLoading() {
+    public async endLoading() {
         this.fullyLoaded = true;
 
         // If the Jupyter environment was set to start automatically, start it now.
@@ -143,7 +177,7 @@ export class JupyterEnvironment {
         }
     }
 
-    public start() {
+    public async start() {
         // Wait for the plugin to be fully loaded before starting Jupyter.
         if (!this.fullyLoaded) {
             this.startJupyterOnLoad = true;
@@ -158,7 +192,7 @@ export class JupyterEnvironment {
         this.aboutToStart = true;
 
         // Emit the ABOUT_TO_START event to allow for any setup before starting Jupyter.
-        this.events.emit(JupyterEnvironmentEvent.ABOUT_TO_START, this);
+        await this.events.emit(JupyterEnvironmentEvent.ABOUT_TO_START, this);
 
         // Reset the saved logs.
         this.jupyterLog = [];
@@ -180,7 +214,8 @@ export class JupyterEnvironment {
         }
         catch (e) {
             this.jupyterProcess = null;
-            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.UNABLE_TO_START_JUPYTER);
+            this.aboutToStart = false;
+            await this.events.emit(JupyterEnvironmentEvent.ERROR, [this, JupyterEnvironmentError.UNABLE_TO_START_JUPYTER]);
             return;
         }
 
@@ -195,8 +230,9 @@ export class JupyterEnvironment {
 
         this.runningType = this.type;
         this.status = JupyterEnvironmentStatus.STARTING;
-        this.events.emit(JupyterEnvironmentEvent.STARTING, this);
-        this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+        this.aboutToStart = false;
+        await this.events.emit(JupyterEnvironmentEvent.STARTING, this);
+        await this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
     }
 
     /**
@@ -204,13 +240,13 @@ export class JupyterEnvironment {
      * 
      * Does nothing if the Jupyter environment is starting.
      */
-    public toggle() {
+    public async toggle() {
         switch (this.status) {
             case JupyterEnvironmentStatus.RUNNING:
                 this.exit();
                 break;
             case JupyterEnvironmentStatus.EXITED:
-                this.start();
+                await this.start();
                 break;
         }
     }
@@ -220,12 +256,12 @@ export class JupyterEnvironment {
      * 
      * Does nothing if the Jupyter environment is starting.
      */
-    public restart() {
+    public async restart() {
         if (this.status === JupyterEnvironmentStatus.RUNNING) {
             this.exit();
         }
 
-        this.start();
+        await this.start();
     }
 
     private onJupyterTimeout() {
@@ -235,7 +271,7 @@ export class JupyterEnvironment {
         }
     }
 
-    private processJupyterOutput(data: string) {
+    private async processJupyterOutput(data: string) {
         data = data.toString();
         this.jupyterLog.push(data);
         if (this.printDebug) {
@@ -252,8 +288,8 @@ export class JupyterEnvironment {
                 this.jupyterPort = parseInt(match[1]);
                 this.jupyterToken = match[2];
                 this.status = JupyterEnvironmentStatus.RUNNING;
-                this.events.emit(JupyterEnvironmentEvent.READY, this);
-                this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+                await this.events.emit(JupyterEnvironmentEvent.READY, this);
+                await this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
             }
         }
     }
@@ -355,20 +391,20 @@ export class JupyterEnvironment {
         }
     }
 
-    private onJupyterExit(_code: number|null, _signal: NodeJS.Signals|null) {
+    private async onJupyterExit(_code: number|null, _signal: NodeJS.Signals|null) {
         if (this.jupyterProcess === null) {
             return;
         }
 
         if (this.jupyterProcess.exitCode !== null && this.jupyterProcess.exitCode !== 0) {
-            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR);
+            await this.events.emit(JupyterEnvironmentEvent.ERROR, [this, JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR]);
         }
         else if (this.jupyerTimedOut) {
             this.jupyerTimedOut = false;
-            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT);
+            await this.events.emit(JupyterEnvironmentEvent.ERROR, [this, JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT]);
         }
         else if (this.status === JupyterEnvironmentStatus.STARTING) {
-            this.events.emit(JupyterEnvironmentEvent.ERROR, this, JupyterEnvironmentError.JUPYTER_EXITED_WITHOUT_ERROR);
+            await this.events.emit(JupyterEnvironmentEvent.ERROR, [this, JupyterEnvironmentError.JUPYTER_EXITED_WITHOUT_ERROR]);
         }
 
         this.jupyterProcess = null;
@@ -376,7 +412,7 @@ export class JupyterEnvironment {
         this.jupyterToken = null;
         this.runningType = null;
         this.status = JupyterEnvironmentStatus.EXITED;
-        this.events.emit(JupyterEnvironmentEvent.EXIT, this);
-        this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
+        await this.events.emit(JupyterEnvironmentEvent.EXIT, this);
+        await this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
     }
 }

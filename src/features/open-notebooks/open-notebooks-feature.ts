@@ -35,19 +35,19 @@ export class OpenNotebooksFeature implements IFeature {
 		}
         this.plugin.env.on(
             JupyterEnvironmentEvent.CHANGE,
-            this.updateRibbon.bind(this)
+            (env) => this.updateRibbon(env)
         );
 
         // Show notices whenever the Jupyter environment status changes,
         this.plugin.env.on(
             JupyterEnvironmentEvent.CHANGE,
-            this.showStatusMessage.bind(this)
+            () => this.showStatusMessage()
         );
 
         // Display an error message when an error occurs
         this.plugin.env.on(
             JupyterEnvironmentEvent.ERROR,
-            this.onEnvironmentError.bind(this)
+            (args) => this.onEnvironmentError(...args)
         );
 
         // Let Obsidian know how to display Jupyter files
@@ -104,7 +104,7 @@ export class OpenNotebooksFeature implements IFeature {
         }
     }
 
-    private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError) {
+    private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError): void {
         if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
             new JupyterModal(
                 this.plugin.app,

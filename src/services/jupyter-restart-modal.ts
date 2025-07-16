@@ -23,7 +23,7 @@ export class JupyterRestartModal extends JupyterModal {
                 {
                     text: "Yes, restart now",
                     onClick: (async () => {
-                        plugin.env.restart();
+                        await plugin.env.restart();
                     }),
                     closeOnClick: true
                 }

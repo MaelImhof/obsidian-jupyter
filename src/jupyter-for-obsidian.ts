@@ -90,7 +90,7 @@ export default class JupyterForObsidian extends Plugin {
         });
 
         // Let the Jupyter environment know that the plugin has been loaded
-        this.env.endLoading();
+        await this.env.endLoading();
     }
 
     /** Called by Obsidian when it unloads the plugin. */

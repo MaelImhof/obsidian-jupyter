@@ -146,13 +146,13 @@ export function registerOpenNotebookSettingsUI(tab: JupyterSettingsTab): void {
                 .addToggle((toggle: ToggleComponent) =>
                     toggle
                         .setValue(plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED)
-                        .onChange((value: boolean) => {
+                        .onChange(async (value: boolean) => {
                             if (plugin.env.getStatus() === JupyterEnvironmentStatus.STARTING && !value) {
                                 toggle.setValue(true);
                                 new Notice("Can't change status while Jupyter server is starting.");
                             }
                             else {
-                                plugin.env.toggle();
+                                await plugin.env.toggle();
                             }
                         })
                 );
