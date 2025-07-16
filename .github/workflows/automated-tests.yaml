@@ -54,8 +54,11 @@ jobs:
 
       - name: Run e2e tests
         run: |
-          ${{ matrix.os == 'ubuntu-latest' && 'xvfb-run --server-args="-screen 0 1280x1024x24" \\' || '' }}
-          npm run test:e2e
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            xvfb-run --server-args="-screen 0 1280x1024x24" npm run test:e2e
+          else
+            npm run test:e2e
+          fi
         shell: bash
         env:
           WDIO_MAX_INSTANCES: 2
