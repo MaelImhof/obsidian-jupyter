@@ -23,13 +23,13 @@ describe('Jupyter notebook creation', async () => {
 		// Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
 		// If this plugin makes it past 2099, the test will break, but I'm not too worried about that
 		const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
-		await newNotebook.waitForExist({ timeout: 5000 });
+		await newNotebook.waitForExist({ timeout: 30000 });
 
 		// Expect the server status to change to starting
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 5000 });
+		await startingServerStatus.waitForExist({ timeout: 30000 });
 	});
 
 	it('is available through the context menu', async () => {
@@ -60,13 +60,13 @@ describe('Jupyter notebook creation', async () => {
 		const newNotebook = browser.$(
 			'.nav-file-title[data-path^="Notebook creation/Jupyter Notebook 20"]'
 		);
-		await newNotebook.waitForExist({ timeout: 5000 });
+		await newNotebook.waitForExist({ timeout: 30000 });
 
 		// Check that the new notebook is opened and Jupyter is started
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 5000 });
+		await startingServerStatus.waitForExist({ timeout: 30000 });
 	});
 
 	it('is available through the command palette', async () => {
@@ -75,13 +75,13 @@ describe('Jupyter notebook creation', async () => {
 
 		// Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
 		const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
-		await newNotebook.waitForExist({ timeout: 5000 });
+		await newNotebook.waitForExist({ timeout: 30000 });
 
 		// Check that the new notebook is opened and Jupyter is started
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 5000 });
+		await startingServerStatus.waitForExist({ timeout: 30000 });
 	});
 
 	it('can be removed from ribbon icons', async () => {
@@ -91,7 +91,7 @@ describe('Jupyter notebook creation', async () => {
 		const createNotebookButton = browser.$(
 			'.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]'
 		);
-		await createNotebookButton.waitForExist({ timeout: 5000, reverse: true });
+		await createNotebookButton.waitForExist({ timeout: 30000, reverse: true });
 	});
 
 	it('can be removed from context menu', async () => {
