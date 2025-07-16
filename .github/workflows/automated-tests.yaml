@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: ["release", "dev"]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
