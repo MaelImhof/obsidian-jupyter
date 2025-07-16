@@ -8,7 +8,7 @@
  */
 
 import { App, ButtonComponent, Component, MarkdownRenderer, Modal, Notice, Setting } from "obsidian";
-import JupyterNotebookPlugin from "src/jupyter-obsidian";
+import JupyterForObsidian from "@/jupyter-for-obsidian";
 
 /**
  * Represents a subset of the attributes of a GitHub release.
@@ -98,9 +98,9 @@ export class UpdateModal extends Modal {
 	private releases: Release[];
     private lastAnnounced: string;
     private toAnnounce: string;
-    private plugin: JupyterNotebookPlugin;
+    private plugin: JupyterForObsidian;
 
-	constructor(app: App, plugin: JupyterNotebookPlugin, lastAnnouncedVersion: string, versionToAnnounce: string) {
+	constructor(app: App, plugin: JupyterForObsidian, lastAnnouncedVersion: string, versionToAnnounce: string) {
 		super(app);
         this.plugin = plugin;
         this.lastAnnounced = lastAnnouncedVersion;
@@ -170,7 +170,7 @@ export class UpdateModal extends Modal {
                     .setIcon("megaphone-off")
                     .setButtonText("Disable update popups")
                     .onClick((() => {
-                        void this.plugin.setUpdatePopup(false);
+                        this.plugin.settings.updatePopup = false;
                         new Notice("Jupyter for Obsidian won't display update popups anymore.");
                     }).bind(this))
             }).bind(this));
