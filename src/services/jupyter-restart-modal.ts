@@ -1,9 +1,20 @@
-import { JupyterModal } from "./jupyter-modal";
-import JupyterNotebookPlugin from "src/jupyter-obsidian";
+import JupyterForObsidian from "@/jupyter-for-obsidian";
+import { JupyterModal } from "@/services/jupyter-modal";
 
+/**
+ * Modal to ask whether the user wants to restart Jupyter to apply
+ * some settings change.
+ * 
+ * Some settings require a Jupyter restart to apply, such as the Python
+ * executable path or whether or not the plugin should automatically
+ * delete the Jupyter checkpoints.
+ * 
+ * In those situations, this modal is displayed to ask the user
+ * whether they want to restart Jupyter now or later.
+ */
 export class JupyterRestartModal extends JupyterModal {
     constructor(
-        plugin: JupyterNotebookPlugin,
+        plugin: JupyterForObsidian,
         settingName: string
     ) {
         super(
@@ -23,7 +34,7 @@ export class JupyterRestartModal extends JupyterModal {
                 {
                     text: "Yes, restart now",
                     onClick: (async () => {
-                        await plugin.restartJupyter();
+                        await plugin.env.restart();
                     }),
                     closeOnClick: true
                 }

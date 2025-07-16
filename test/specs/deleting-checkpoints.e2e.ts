@@ -10,6 +10,8 @@ describe.only('Jupyter checkpoints deletion', async () => {
     beforeEach(async () => {
         // Ensure a completely clean vault for each test
         await browser.reloadObsidian({vault: "test-vault"});
+        // Make sure default settings are applied
+        await resetVaultWithSettings(obsidianPage, {});
     });
 
     it('is disabled by default', async () => {

@@ -7,6 +7,11 @@
       "@wdio/mocha-framework",
       "wdio-obsidian-service"
     ],
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+    },
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",

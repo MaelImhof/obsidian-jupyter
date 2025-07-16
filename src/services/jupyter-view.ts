@@ -1,10 +1,15 @@
 import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from "obsidian";
-import JupyterNotebookPlugin from "../jupyter-obsidian";
-import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "../jupyter-env";
-import { JupyterModalButton } from "./jupyter-modal";
+import JupyterForObsidian from "@/jupyter-for-obsidian";
+import { JupyterEnvironment, JupyterEnvironmentEvent, JupyterEnvironmentStatus } from "@/services/jupyter-environment";
+import { JupyterModalButton } from "@/services/jupyter-modal";
 
 export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
+/**
+ * Core view for Jupyter documents. Handles situations where the Jupyter
+ * environment is not running, starting it if needed, and displaying
+ * the document in a webview.
+ */
 export class EmbeddedJupyterView extends FileView {
 
     private readonly changeEventListener = this.onJupyterEnvironmentStatusChange.bind(this);
@@ -16,7 +21,7 @@ export class EmbeddedJupyterView extends FileView {
     private messageTextEl: HTMLElement | null = null;
     private webviewEl: HTMLElement | null = null;
 
-    constructor(leaf: WorkspaceLeaf, private readonly plugin: JupyterNotebookPlugin) {
+    constructor(leaf: WorkspaceLeaf, private readonly plugin: JupyterForObsidian) {
         super(leaf);
     }
 
@@ -62,7 +67,7 @@ export class EmbeddedJupyterView extends FileView {
             case JupyterEnvironmentStatus.EXITED:
                 if (this.plugin.settings.startJupyterAuto) {
                     this.displayExitMessage();
-                    this.plugin.toggleJupyter();
+                    this.plugin.env.start();
                 }
                 else {
                     this.displayMessage(
