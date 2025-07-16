@@ -1,11 +1,18 @@
 import { expect } from '@wdio/globals';
 import type { Browser } from 'webdriverio';
-import { ObsidianBrowserCommands } from 'wdio-obsidian-service';
-import { getFileTreeItem } from './test-utils';
+import { ObsidianBrowserCommands, obsidianPage } from 'wdio-obsidian-service';
+import { getFileTreeItem, resetVaultWithSettings } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
 describe('Opening a Jupyter notebook', async () => {
+	beforeEach(async () => {
+		// Ensure a completely clean vault for each test
+		await browser.reloadObsidian({ vault: 'test-vault' });
+		// Make sure default settings are applied
+		await resetVaultWithSettings(obsidianPage, {});
+	});
+
 	it('opens an Obsidian tab and displays a webview', async () => {
 		// Expect the current server status to be idle (or exited)
 		const idleServerStatus = browser.$(
