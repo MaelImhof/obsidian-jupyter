@@ -5,6 +5,11 @@ import { JupyterModalButton } from "@/services/jupyter-modal";
 
 export const JUPYTER_VIEW_TYPE = "jupyter-view";
 
+/**
+ * Core view for Jupyter documents. Handles situations where the Jupyter
+ * environment is not running, starting it if needed, and displaying
+ * the document in a webview.
+ */
 export class EmbeddedJupyterView extends FileView {
 
     private readonly changeEventListener = this.onJupyterEnvironmentStatusChange.bind(this);

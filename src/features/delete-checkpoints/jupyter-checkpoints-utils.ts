@@ -44,6 +44,10 @@ export function getCheckpointsRootFolder(plugin: JupyterForObsidian): JupyterAbs
 	}
 }
 
+/**
+ * Deletes the Jupyter checkpoints folder, either by moving it to the trash
+ * or by deleting it directly, depending on the user settings.
+ */
 export async function purgeJupyterCheckpoints(plugin: JupyterForObsidian) {
 		// Find what the folder to delete is, where the checkpoints are stored
 		let checkpointsFolder: JupyterAbstractPath;

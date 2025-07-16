@@ -32,12 +32,27 @@ export const DEFAULT_SETTINGS: Settings = {
     ...DEFAULT_DELETE_CHECKPOINTS_SETTINGS
 }
 
+/**
+ * Type for TypeScript to infer what events are available
+ * for the SettingsProxy class.
+ * 
+ * Automatically infers all `change:<settingName>` events
+ * for each setting in the Settings type.
+ */
 export type SettingChangeEvent<T> =
     | "change"
     | {
         [K in keyof T & string]: `change:${K}`;
     }[keyof T & string];
 
+/**
+ * Type for TypeScript to know what listener is required for which event.
+ * 
+ * The general "change" event will have a listener that receives three args,
+ * the setting key, the new value, and the old value. Other listeners are
+ * specific to a certain setting key and will only receive the new and old
+ * values.
+ */
 export type ListenerForEvent<T, K> =
   K extends `change:${infer P}`
     ? P extends keyof T
@@ -47,6 +62,16 @@ export type ListenerForEvent<T, K> =
       ? (key: keyof T, newVal: T[keyof T], oldVal: T[keyof T]) => void
       : never;
 
+/**
+ * A proxy class for making the settings object reactive.
+ * 
+ * Throughout the entire codebase, if some feature of the plugin sets the
+ * value of a setting, it will automatically emit related events, without
+ * the need to call any additional methods.
+ * 
+ * This proxy also allows others to listen to changes in the settings
+ * object, and to react to changes in specific settings.
+ */
 export class SettingsProxy<T extends Record<string, any>> extends EventEmitter {
     private _settings: T;
     public settings: T;

@@ -4,10 +4,36 @@ import { addIcon, Menu, MenuItem, Notice, PaneType, TAbstractFile, TFile, TFolde
 import { OpenCreatedNotebook, registerCreateNotebooksSettingsUI } from "./create-notebooks-settings";
 import { JupyterAbstractPath } from "@/services/jupyter-path";
 
+/**
+ * Feature that allows the user to create new Jupyter notebooks
+ * from the Obsidian UI in different ways :
+ * 
+ * - By clicking on a ribbon icon
+ * - By right-clicking on a folder in the file explorer
+ * - By using a command in the command palette
+ */
 export class CreateNotebooksFeature implements IFeature {
     private plugin: JupyterForObsidian;
+
+    /**
+     * The ribbon icon used to create Jupyter notebooks.
+     * 
+     * Since the user can show/hide the ribbon icon in the settings, a
+     * reference to the icon is kept here so that it can be removed
+     * later if needed.
+     */
     private fileRibbonIcon: HTMLElement|null = null;
 
+    /**
+     * Handler that gets called by Obsidian when the user right-clicks a
+     * file or folder in the file explorer.
+     * 
+     * Used to display a context menu item to create a new Jupyter notebook
+     * in the folder that was right-clicked.
+     * 
+     * Kept as a class property so that it can be removed later
+     * if the user disables the context menu item in the settings.
+     */
     private onFileContextMenu = this.onFileContextMenuOpened.bind(this);
 
     async onload(plugin: JupyterForObsidian): Promise<void> {
@@ -81,6 +107,8 @@ export class CreateNotebooksFeature implements IFeature {
             }
         );
 
+        // Allow the user to create a new Jupyter notebook with an Obsidian
+        // command from the command palette
         this.plugin.addCommand({
             id: "jupyter-create-notebook",
             name: "Create new Jupyter notebook",
@@ -97,11 +125,13 @@ export class CreateNotebooksFeature implements IFeature {
         });
     }
 
-    public async onFileRibbonIconClicked() {
+    /** Event handler for when the ribbon icon is clicked. */
+    private async onFileRibbonIconClicked() {
         await this.createJupyterNotebook(JupyterAbstractPath.fromRelative("/", true, this.plugin.app.vault));
     }
 
-    public onFileContextMenuOpened(menu: Menu, file: TAbstractFile, _source: string, _leaf?: WorkspaceLeaf): void {
+    /** Triggered by Obsidian when the user right clicks a file or folder. */
+    private onFileContextMenuOpened(menu: Menu, file: TAbstractFile, _source: string, _leaf?: WorkspaceLeaf): void {
         // Only propose to create a Jupyter Notebook in folders
         if (file instanceof TFolder) {
             menu.addItem((item: MenuItem) => {
@@ -116,6 +146,7 @@ export class CreateNotebooksFeature implements IFeature {
         }
     }
 
+    /** Creates a new Jupyter notebook in the specified folder. */
     private async createJupyterNotebook(folder: JupyterAbstractPath) {
         // Check that the notebook is being created inside of the Obsidian vault
         if (!folder.inVault()) {
@@ -162,6 +193,10 @@ export class CreateNotebooksFeature implements IFeature {
         }
     }
 
+    /**
+     * Builds a default filename for a new Jupyter notebook using the current
+     * date and time.
+     */
     private getDefaultNotebookFilename(): string {
 		const now = new Date();
 		const year = now.getFullYear();

@@ -56,7 +56,17 @@ export enum JupyterEnvironmentError {
     JUPYTER_STARTING_TIMEOUT = "Jupyter process took too long to start, assumed something was wrong."
 }
 
-/** Type of an event callback depending on the event. */
+/**
+ * Type definition of what callback is required for which event.
+ * 
+ * For example, the callback for an ERROR event should take an array
+ * containing the Jupyter environment and the error that occurred.
+ * 
+ * But most events simply take the Jupyter environment as an argument.
+ * 
+ * This is primarily to make TypeScript happy and ensure type safety
+ * throughout the codebase.
+ */
 type JupyterEnvironmentEventCallback<T extends JupyterEnvironmentEvent, R = void> =
     T extends JupyterEnvironmentEvent.ERROR
         ? (args: [JupyterEnvironment, JupyterEnvironmentError]) => R

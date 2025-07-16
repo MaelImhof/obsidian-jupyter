@@ -3,6 +3,10 @@ import { IFeature } from "../plugin-feature";
 import { registerUpdateModalSettingsUI } from "./update-modal-settings";
 import { UpdateModal } from "./jupyter-update-modal";
 
+/**
+ * Feature that displays a popup message whenever the plugin
+ * is updated with the changes made in the new version.
+ */
 export class UpdateModalFeature implements IFeature {
     private plugin: JupyterForObsidian;
 

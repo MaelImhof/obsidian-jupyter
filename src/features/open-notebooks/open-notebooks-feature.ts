@@ -7,6 +7,11 @@ import { Notice, setIcon, setTooltip } from "obsidian";
 import { JupyterModal } from "@/services/jupyter-modal";
 import { EmbeddedJupyterView } from "@/services/jupyter-view";
 
+/**
+ * Core feature of the Jupyter for Obsidian plugin that allows users to
+ * open Jupyter notebooks in Obsidian, with some configuration tweaks
+ * (see the feature's settings for more details).
+ */
 export class OpenNotebooksFeature implements IFeature {
     private plugin: JupyterForObsidian;
     private serverRibbonIcon: HTMLElement|null = null;
@@ -83,6 +88,11 @@ export class OpenNotebooksFeature implements IFeature {
     
     }
 
+    /**
+     * Every time the Jupyter environment status changes, this method
+     * updates the ribbon icon to reflect the current status (one
+     * icon corresponds to one specific status).
+     */
     private async updateRibbon(env: JupyterEnvironment) {
         if (this.serverRibbonIcon === null || !this.plugin.settings.displayServerRibbonIcon) {
             return;
@@ -104,6 +114,11 @@ export class OpenNotebooksFeature implements IFeature {
         }
     }
 
+    /**
+     * Handles errors that occur in the Jupyter environment by displaying a
+     * modal with information about the error and a link to the
+     * troubleshooting guide.
+     */
     private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError): void {
         if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
             new JupyterModal(
@@ -184,6 +199,11 @@ export class OpenNotebooksFeature implements IFeature {
         }
     }
 
+    /**
+     * Configures the Jupyter environment with the current settings
+     * and sets up listeners to update the environment
+     * whenever the settings change.
+     */
     private configureJupyterEnvironment(
         env: JupyterEnvironment,
         settings: Settings,
@@ -245,10 +265,5 @@ export class OpenNotebooksFeature implements IFeature {
                 this.serverRibbonIcon = null;
             }
         });
-    }
-
-
-    onunload(): void {
-        
     }
 }

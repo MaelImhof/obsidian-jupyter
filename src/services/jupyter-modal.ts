@@ -1,11 +1,16 @@
 import { App, ButtonComponent, Modal, Setting } from "obsidian";
 
+/** Contract to define what a button should do and look like. */
 export interface JupyterModalButton {
     text: string;
     onClick: () => void;
     closeOnClick: boolean;
 }
 
+/**
+ * Base class for modals used by the Jupyter plugin. Simple modal with
+ * a title, a message and a set of buttons.
+ */
 export class JupyterModal extends Modal {
     constructor(
         app: App,

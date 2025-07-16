@@ -1,5 +1,14 @@
 import JupyterForObsidian from "@/jupyter-for-obsidian";
 
+/**
+ * The Jupyter for Obsidian plugin is organized into features.
+ * 
+ * Each feature has its own loading and unloading logic, allowing for
+ * modularity and flexibility in the plugin's functionality and
+ * maintainability.
+ * 
+ * Each of the features implements the `IFeature` interface.
+ */
 export interface IFeature {
 
     /**
