@@ -66,7 +66,7 @@ describe('Jupyter notebook creation', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 5000 });
+		await startingServerStatus.waitForExist({ timeout: 2000 });
 	});
 
 	it('is available through the command palette', async () => {
@@ -81,7 +81,7 @@ describe('Jupyter notebook creation', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 5000 });
+		await startingServerStatus.waitForExist({ timeout: 2000 });
 	});
 
 	it('can be removed from ribbon icons', async () => {

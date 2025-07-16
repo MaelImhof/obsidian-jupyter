@@ -49,7 +49,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 			'.side-dock-ribbon-action[aria-label="Stop Jupyter Server"]'
 		);
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 5000 });
+		await idleServerStatus.waitForExist({ timeout: 2000 });
 
 		// Expect the Jupyter checkpoints folder to still exist
 		const checkpointsFolderExists = await folderExists(checkpointsFolder);
