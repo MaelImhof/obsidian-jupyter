@@ -43,7 +43,7 @@ jobs:
         name: "Get Obsidian cache key"
         shell: bash
         run: |
-          npx tsx wdio.conf.mts > obsidian-versions-lock.txt
+          npx tsx wdio.conf.ts > obsidian-versions-lock.txt
           rm -rf .obsidian-cache
 
       - name: Cache .obsidian-cache
