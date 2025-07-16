@@ -2,7 +2,10 @@ name: Vitest (Unit Tests)
 
 on:
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["release", "dev"]
+
+permissions:
+  contents: read
 
 jobs:
   test:
