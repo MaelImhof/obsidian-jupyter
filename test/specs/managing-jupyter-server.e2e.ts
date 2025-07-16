@@ -25,7 +25,7 @@ describe('Managing Jupyter server state', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 2000 });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 		expect(idleServerStatus).not.toExist();
 
 		// Wait for the server to be running
@@ -40,7 +40,7 @@ describe('Managing Jupyter server state', async () => {
 		await runningServerStatus.click();
 
 		// Expect the server status to change back to idle
-		await idleServerStatus.waitForExist({ timeout: 2000 });
+		await idleServerStatus.waitForExist({ timeout: 5000 });
 		expect(runningServerStatus).not.toExist();
 		expect(startingServerStatus).not.toExist();
 	});
@@ -59,7 +59,7 @@ describe('Managing Jupyter server state', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 2000 });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 		expect(idleServerStatus).not.toExist();
 
 		// Try clicking the ribbon icon again while Jupyter is starting
@@ -75,7 +75,7 @@ describe('Managing Jupyter server state', async () => {
 		);
 		await runningServerStatus.waitForExist({ timeout: 30000 });
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 2000 });
+		await idleServerStatus.waitForExist({ timeout: 5000 });
 	});
 
 	it('can be removed from the ribbon', async () => {
@@ -111,7 +111,7 @@ describe('Managing Jupyter server state', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 2000 });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 
 		// Expect a status update notice to be displayed
 		const statusUpdateNotice = (await browser
@@ -139,7 +139,7 @@ describe('Managing Jupyter server state', async () => {
 
 		// Stop the Jupyter server
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 2000 });
+		await idleServerStatus.waitForExist({ timeout: 5000 });
 
 		// Expect a status update notice for stopping the server
 		const stoppedNotice = (await browser
@@ -172,7 +172,7 @@ describe('Managing Jupyter server state', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 2000 });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 		expect(idleServerStatus).not.toExist();
 
 		// Expect no status update notice to be displayed

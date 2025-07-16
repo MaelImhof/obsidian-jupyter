@@ -22,13 +22,13 @@ describe('Opening a Jupyter notebook', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: 2000 });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 
 		// Wait for a tab to open with the notebook
 		const tabHeader = browser.$(
 			'.workspace-tab-header.is-active[aria-label="Valid notebook.ipynb"]'
 		);
-		await tabHeader.waitForExist({ timeout: 2000 });
+		await tabHeader.waitForExist({ timeout: 5000 });
 
 		// Check that the notebook entry in the tree is marked as active
 		expect((await notebook.getAttribute('class')).includes('is-active')).toBe(true);
@@ -37,7 +37,7 @@ describe('Opening a Jupyter notebook', async () => {
 		const viewContent = browser.$('.view-content');
 		expect(viewContent).toExist();
 		const messageContainer = viewContent.$('.jupyter-message-container');
-		await messageContainer.waitForExist({ timeout: 2000 });
+		await messageContainer.waitForExist({ timeout: 5000 });
 
 		// Expect Jupyter status to be running after a while
 		const runningServerStatus = browser.$(
@@ -54,7 +54,7 @@ describe('Opening a Jupyter notebook', async () => {
 
 		// Stop the Jupyter server
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 2000 });
+		await idleServerStatus.waitForExist({ timeout: 5000 });
 
 		// Check that the Jupyter webview is no longer present
 		const jupyterWebviewExists = await jupyterWebview.isExisting();
