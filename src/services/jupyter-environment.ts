@@ -15,6 +15,11 @@ export enum JupyterEnvironmentType {
 
 export enum JupyterEnvironmentEvent {
     /**
+     * Fired right before the Jupyter environment starts. This is useful for performing
+     * any setup, such as creating a custom Jupyter configuration.
+     */
+    ABOUT_TO_START = "about-to-start",
+    /**
      * When the Jupyter child process has been started, but the server is not ready yet.
      */
     STARTING = "starting",
@@ -58,6 +63,7 @@ export class JupyterEnvironment {
     private jupyterToken: string|null = null;
     private events: EventEmitter = new EventEmitter();
     private status: JupyterEnvironmentStatus = JupyterEnvironmentStatus.EXITED;
+    private aboutToStart: boolean = false;
     private runningType: JupyterEnvironmentType|null = null;
 
     private jupyterExitListener: (code: number|null, signal: NodeJS.Signals|null) => void = this.onJupyterExit.bind(this);
@@ -144,9 +150,15 @@ export class JupyterEnvironment {
             return;
         }
 
-        if (this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
+        // Do not start Jupyter if it is already starting or running.
+        if (this.aboutToStart || this.getStatus() !== JupyterEnvironmentStatus.EXITED) {
             return;
         }
+
+        this.aboutToStart = true;
+
+        // Emit the ABOUT_TO_START event to allow for any setup before starting Jupyter.
+        this.events.emit(JupyterEnvironmentEvent.ABOUT_TO_START, this);
 
         // Reset the saved logs.
         this.jupyterLog = [];

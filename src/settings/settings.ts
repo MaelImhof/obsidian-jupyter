@@ -1,4 +1,5 @@
 import { CreateNotebooksSettings, DEFAULT_CREATE_NOTEBOOKS_SETTINGS } from "@/features/create-notebooks/create-notebooks-settings";
+import { DEFAULT_DELETE_CHECKPOINTS_SETTINGS, DeleteCheckpointsSettings } from "@/features/delete-checkpoints/delete-checkpoints-settings";
 import { DEFAULT_OPEN_NOTEBOOKS_SETTINGS, OpenNotebooksSettings } from "@/features/open-notebooks/open-notebooks-settings";
 import { DEFAULT_UPDATE_MODAL_SETTINGS, UpdateModalSettings } from "@/features/update-modal/update-modal-settings";
 import { EventEmitter } from "stream";
@@ -17,6 +18,7 @@ export interface Settings extends Flatten<
     OpenNotebooksSettings
     & CreateNotebooksSettings
     & UpdateModalSettings
+    & DeleteCheckpointsSettings
 > {}
 
 /**
@@ -26,7 +28,8 @@ export interface Settings extends Flatten<
 export const DEFAULT_SETTINGS: Settings = {
     ...DEFAULT_OPEN_NOTEBOOKS_SETTINGS,
     ...DEFAULT_CREATE_NOTEBOOKS_SETTINGS,
-    ...DEFAULT_UPDATE_MODAL_SETTINGS
+    ...DEFAULT_UPDATE_MODAL_SETTINGS,
+    ...DEFAULT_DELETE_CHECKPOINTS_SETTINGS
 }
 
 export type SettingChangeEvent<T> =
