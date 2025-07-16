@@ -1,7 +1,7 @@
 import { expect } from '@wdio/globals';
 import type { Browser } from 'webdriverio';
 import { ObsidianBrowserCommands, obsidianPage } from 'wdio-obsidian-service';
-import { getFileTreeItem, resetVaultWithSettings, TIMEOUT } from './test-utils';
+import { getFileTreeItem, resetVaultWithSettings } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
@@ -29,13 +29,13 @@ describe('Opening a Jupyter notebook', async () => {
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
+		await startingServerStatus.waitForExist({ timeout: 2000 });
 
 		// Wait for a tab to open with the notebook
 		const tabHeader = browser.$(
 			'.workspace-tab-header.is-active[aria-label="Valid notebook.ipynb"]'
 		);
-		await tabHeader.waitForExist({ timeout: TIMEOUT.TAB_UPDATE });
+		await tabHeader.waitForExist({ timeout: 2000 });
 
 		// Check that the notebook entry in the tree is marked as active
 		expect((await notebook.getAttribute('class')).includes('is-active')).toBe(true);
@@ -44,24 +44,24 @@ describe('Opening a Jupyter notebook', async () => {
 		const viewContent = browser.$('.view-content');
 		expect(viewContent).toExist();
 		const messageContainer = viewContent.$('.jupyter-message-container');
-		await messageContainer.waitForExist({ timeout: TIMEOUT.NOTEBOOK_LOAD });
+		await messageContainer.waitForExist({ timeout: 2000 });
 
 		// Expect Jupyter status to be running after a while
 		const runningServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Stop Jupyter Server"]'
 		);
-		await runningServerStatus.waitForExist({ timeout: TIMEOUT.START_SERVER });
+		await runningServerStatus.waitForExist({ timeout: 30000 });
 
 		// Check that the notebook content is loaded
 		const jupyterWebview = browser.$('webview.jupyter-webview');
-		await jupyterWebview.waitForExist({ timeout: TIMEOUT.NOTEBOOK_LOAD });
+		await jupyterWebview.waitForExist({ timeout: 5000 });
 
 		// Check that the notebook entry in the tree is still marked as active
 		expect((await notebook.getAttribute('class')).includes('is-active')).toBe(true);
 
 		// Stop the Jupyter server
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
+		await idleServerStatus.waitForExist({ timeout: 2000 });
 
 		// Check that the Jupyter webview is no longer present
 		const jupyterWebviewExists = await jupyterWebview.isExisting();

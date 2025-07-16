@@ -1,7 +1,7 @@
 import { expect } from '@wdio/globals';
 import type { Browser } from 'webdriverio';
 import { ObsidianBrowserCommands, obsidianPage } from 'wdio-obsidian-service';
-import { getFileTreeItem, resetVaultWithSettings, TIMEOUT } from './test-utils';
+import { getFileTreeItem, resetVaultWithSettings } from './test-utils';
 
 declare const browser: Browser & ObsidianBrowserCommands;
 
@@ -26,13 +26,13 @@ describe('Jupyter notebook creation', async () => {
 		// Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
 		// If this plugin makes it past 2099, the test will break, but I'm not too worried about that
 		const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
-		await newNotebook.waitForExist({ timeout: TIMEOUT.CREATE_NOTEBOOK });
+		await newNotebook.waitForExist({ timeout: 5000 });
 
 		// Expect the server status to change to starting
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
+		await startingServerStatus.waitForExist({ timeout: 5000 });
 	});
 
 	it('is available through the context menu', async () => {
@@ -63,13 +63,13 @@ describe('Jupyter notebook creation', async () => {
 		const newNotebook = browser.$(
 			'.nav-file-title[data-path^="Notebook creation/Jupyter Notebook 20"]'
 		);
-		await newNotebook.waitForExist({ timeout: TIMEOUT.CREATE_NOTEBOOK });
+		await newNotebook.waitForExist({ timeout: 5000 });
 
 		// Check that the new notebook is opened and Jupyter is started
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
+		await startingServerStatus.waitForExist({ timeout: 2000 });
 	});
 
 	it('is available through the command palette', async () => {
@@ -78,13 +78,13 @@ describe('Jupyter notebook creation', async () => {
 
 		// Find the new notebook with a name such as "Jupyter Notebook YYYY-MM-DD-HH-mm-SS.ipynb"
 		const newNotebook = browser.$('.nav-file-title[data-path^="Jupyter Notebook 20"]');
-		await newNotebook.waitForExist({ timeout: TIMEOUT.CREATE_NOTEBOOK });
+		await newNotebook.waitForExist({ timeout: 5000 });
 
 		// Check that the new notebook is opened and Jupyter is started
 		const startingServerStatus = browser.$(
 			'.side-dock-ribbon-action[aria-label="Jupyter Server is starting"]'
 		);
-		await startingServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
+		await startingServerStatus.waitForExist({ timeout: 2000 });
 	});
 
 	it('can be removed from ribbon icons', async () => {
@@ -94,10 +94,7 @@ describe('Jupyter notebook creation', async () => {
 		const createNotebookButton = browser.$(
 			'.side-dock-ribbon-action[aria-label="Create Jupyter Notebook"]'
 		);
-		await createNotebookButton.waitForExist({
-			timeout: TIMEOUT.SERVER_RIBBON_UPDATE,
-			reverse: true
-		});
+		await createNotebookButton.waitForExist({ timeout: 5000, reverse: true });
 	});
 
 	it('can be removed from context menu', async () => {
@@ -120,9 +117,6 @@ describe('Jupyter notebook creation', async () => {
 		const newNotebookContextMenuItem = browser.$(
 			'.menu-item.tappable:has(> .menu-item-icon > svg.jupyter-logo)'
 		);
-		await newNotebookContextMenuItem.waitForExist({
-			timeout: TIMEOUT.CONTEXT_MENU_UPDATE,
-			reverse: true
-		});
+		await newNotebookContextMenuItem.waitForExist({ timeout: 100, reverse: true });
 	});
 });
