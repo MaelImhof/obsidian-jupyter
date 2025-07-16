@@ -52,6 +52,9 @@ jobs:
           path: .obsidian-cache
           key: obsidian-cache-${{ matrix.os }}-${{ hashFiles('obsidian-versions-lock.txt') }}
 
+      - name: Build plugin
+        run: npm run build
+        
       - name: Run e2e tests
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
