@@ -9,8 +9,8 @@ import { FileSystemAdapter, Notice } from "obsidian";
  * custom value, the Jupyter checkpoints will be stored in the plugin's settings directory
  * before being deleted.
  */
-export function getDefaultCheckpointsRootFolder(): JupyterAbstractPath {
-	const pluginFolder: JupyterAbstractPath = getPluginFolder();
+export function getDefaultCheckpointsRootFolder(plugin: JupyterForObsidian): JupyterAbstractPath {
+	const pluginFolder: JupyterAbstractPath = getPluginFolder(plugin);
 	return pluginFolder.append(".ipynb_checkpoints/", true);
 }
 
@@ -40,7 +40,7 @@ export function getCheckpointsRootFolder(plugin: JupyterForObsidian): JupyterAbs
 	// Otherwise, use the default value
 	else {
 		// The default path is inside of the plugin's folder
-		return getDefaultCheckpointsRootFolder();
+		return getDefaultCheckpointsRootFolder(plugin);
 	}
 }
 

@@ -22,14 +22,29 @@ export class DeleteCheckpointsFeature implements IFeature {
         // Register the settings UI for this feature
         registerDeleteCheckpointsSettings(
             this.plugin.settingsTab,
-            getDefaultCheckpointsRootFolder()
+            getDefaultCheckpointsRootFolder(this.plugin)
         )
+
+        // Make sure the checkpoints folder always ends with a slash
+        this.plugin.settingsProxy.on(
+            "change:checkpointsFolder",
+            (newVal, _oldVal) => {
+                if (newVal !== "" && !newVal.endsWith('/')) {
+                    newVal += '/';
+                    this.plugin.settings.checkpointsFolder = newVal;
+                }
+            }
+        );
+        if (this.plugin.settings.checkpointsFolder !== ""
+            && !this.plugin.settings.checkpointsFolder.endsWith("/")) {
+            this.plugin.settings.checkpointsFolder += '/';
+        }
     }
 
     private async setupBasedOnSettings(): Promise<void> {
         if (this.plugin.settings.deleteCheckpoints) {
             this.plugin.env.setCustomConfigFolderPath(
-                getPluginFolder().getAbsolutePath()
+                getPluginFolder(this.plugin).getAbsolutePath()
             );
             if (!await customJupyterConfigExists(this.plugin)) {
                 await generateJupyterConfig(this.plugin);

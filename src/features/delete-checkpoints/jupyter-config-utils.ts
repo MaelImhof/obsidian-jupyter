@@ -9,8 +9,8 @@ import { getCheckpointsRootFolder } from "./jupyter-checkpoints-utils";
  * configuration is used to tell Jupyter where to put checkpoints if the user has enabled
  * auto-deletion of checkpoints.
  */
-export function getJupyterConfigPath(): JupyterAbstractPath {
-	const pluginFolder: JupyterAbstractPath = getPluginFolder();
+export function getJupyterConfigPath(plugin: JupyterForObsidian): JupyterAbstractPath {
+	const pluginFolder: JupyterAbstractPath = getPluginFolder(plugin);
 	return pluginFolder.append("jupyter_lab_config.py", false);
 }
 
@@ -21,7 +21,7 @@ export function getJupyterConfigPath(): JupyterAbstractPath {
 export async function customJupyterConfigExists(plugin: JupyterForObsidian): Promise<boolean> {
     // Find out the path to the Jupyter configuration file
     let configPath: JupyterAbstractPath;
-    try { configPath = getJupyterConfigPath(); }
+    try { configPath = getJupyterConfigPath(plugin); }
     catch (e) { return false; }
 
     // Check for the config to be in the vault
@@ -46,7 +46,7 @@ export async function generateJupyterConfig(plugin: JupyterForObsidian): Promise
 	let configPath: JupyterAbstractPath;
 	try {
 		checkpointsFolder = getCheckpointsRootFolder(plugin);
-		configPath = getJupyterConfigPath();
+		configPath = getJupyterConfigPath(plugin);
 	}
 	catch (e) { return false; }
 
@@ -72,7 +72,7 @@ print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loade
 export async function deleteJupyterConfig(plugin: JupyterForObsidian) {
 	// Find out the path to the Jupyter configuration file
 	let configPath: JupyterAbstractPath;
-	try { configPath = getJupyterConfigPath(); }
+	try { configPath = getJupyterConfigPath(plugin); }
 	catch (e) { return; }
 
 	// To use the vault adapter, the config path must be within the vault

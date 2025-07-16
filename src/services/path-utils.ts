@@ -1,3 +1,4 @@
+import JupyterForObsidian from "@/jupyter-for-obsidian";
 import { JupyterAbstractPath } from "@/services/jupyter-path";
 
 /**
@@ -7,10 +8,10 @@ import { JupyterAbstractPath } from "@/services/jupyter-path";
  * This method provides the path to the folder that hosts Jupyter for Obsidian
  * and its code, settings and configuration.
  */
-export function getPluginFolder(): JupyterAbstractPath {
+export function getPluginFolder(plugin: JupyterForObsidian): JupyterAbstractPath {
     return JupyterAbstractPath.fromRelative(
-        this.app.vault.configDir + "/plugins/" + this.manifest.id + "/",
+        plugin.app.vault.configDir + "/plugins/" + plugin.manifest.id + "/",
         true,
-        this.app.vault
+        plugin.app.vault
     );
 }
