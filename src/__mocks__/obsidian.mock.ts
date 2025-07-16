@@ -1,6 +1,6 @@
 /**
  * THIS FILE IS ONLY USED FOR TEST PURPOSES
- * 
+ *
  * Mocks the Obsidian-provided functions used in the code for unit
  * tests with Vitest.
  */
@@ -24,44 +24,48 @@
  * ```
  * @public
  */
-export function debounce<T extends unknown[], V>(cb: (...args: [...T]) => V, timeout?: number, resetTimer?: boolean): Debouncer<T, V> {
-    let timer: NodeJS.Timeout | null = null;
-    let lastResult: V | void;
+export function debounce<T extends unknown[], V>(
+	cb: (...args: [...T]) => V,
+	timeout?: number,
+	resetTimer?: boolean
+): Debouncer<T, V> {
+	let timer: NodeJS.Timeout | null = null;
+	let lastResult: V | void;
 
-    const debounced = (...args: [...T]): Debouncer<T, V> => {
-        if (timer !== null && resetTimer) {
-            clearTimeout(timer);
-        }
+	const debounced = (...args: [...T]): Debouncer<T, V> => {
+		if (timer !== null && resetTimer) {
+			clearTimeout(timer);
+		}
 
-        timer = setTimeout(() => {
-            lastResult = cb(...args);
-            timer = null;
-        }, timeout ?? 0);
+		timer = setTimeout(() => {
+			lastResult = cb(...args);
+			timer = null;
+		}, timeout ?? 0);
 
-        return debounced;
-    };
+		return debounced;
+	};
 
-    debounced.cancel = () => {
-        if (timer !== null) {
-            clearTimeout(timer);
-            timer = null;
-        }
-        return debounced;
-    };
+	debounced.cancel = () => {
+		if (timer !== null) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		return debounced;
+	};
 
-    debounced.run = () => lastResult;
+	debounced.run = () => lastResult;
 
-    return debounced as Debouncer<T, V>;
+	return debounced as Debouncer<T, V>;
 }
 
 /** @public */
 export interface Debouncer<T extends unknown[], V> {
-    /** @public */
-    (...args: [...T]): this;
-    /** @public */
-    cancel(): this;
-    /** @public */
-    run(): V | void;
+	/** @public */
+	(...args: [...T]): this;
+	/** @public */
+	cancel(): this;
+	/** @public */
+	run(): V | void;
 }
 
 /**
@@ -70,15 +74,15 @@ export interface Debouncer<T extends unknown[], V> {
  * @public
  */
 export class FileSystemAdapter {
-    constructor(private basePath: string = "/mock/base/path") {
-        // Mock implementation
-    }
+	constructor(private basePath: string = '/mock/base/path') {
+		// Mock implementation
+	}
 
-    getBasePath(): string {
-        return this.basePath;
-    }
+	getBasePath(): string {
+		return this.basePath;
+	}
 }
 
 export function normalizePath(path: string): string {
-    return path;
+	return path;
 }
