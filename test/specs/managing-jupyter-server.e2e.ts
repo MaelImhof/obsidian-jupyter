@@ -7,9 +7,7 @@ declare const browser: Browser & ObsidianBrowserCommands;
 
 describe('Managing Jupyter server state', async () => {
 	beforeEach(async () => {
-		// Ensure a completely clean vault for each test
-		await browser.reloadObsidian({ vault: 'test-vault' });
-		// Make sure default settings are applied
+		// Reset the vault to a clean state before each test
 		await resetVaultWithSettings(obsidianPage, {});
 	});
 
