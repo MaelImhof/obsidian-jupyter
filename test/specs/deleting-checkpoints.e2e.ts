@@ -1,7 +1,7 @@
 import { expect } from '@wdio/globals';
 import type { Browser } from 'webdriverio';
 import { ObsidianBrowserCommands, obsidianPage } from 'wdio-obsidian-service';
-import { folderExists, getFileTreeItem, resetVaultWithSettings } from './test-utils';
+import { folderExists, getFileTreeItem, resetVaultWithSettings, TIMEOUT } from './test-utils';
 import path from 'path';
 
 declare const browser: Browser & ObsidianBrowserCommands;
@@ -28,7 +28,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 
 		// Check that the notebook content is loaded
 		const jupyterWebview = browser.$('webview.jupyter-webview');
-		await jupyterWebview.waitForExist({ timeout: 35000 });
+		await jupyterWebview.waitForExist({ timeout: TIMEOUT.START_SERVER });
 
 		// Check that a Jupyter checkpoint folder is created
 		let vaultPath = await obsidianPage.getVaultPath();
@@ -41,7 +41,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 				// Check that the checkpoints folder was indeed created in the file system
 				return await folderExists(checkpointsFolder);
 			},
-			{ timeout: 15000 }
+			{ timeout: TIMEOUT.CHECKPOINTS_FOLDER }
 		);
 
 		// Stop the Jupyter server
@@ -49,7 +49,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 			'.side-dock-ribbon-action[aria-label="Stop Jupyter Server"]'
 		);
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 2000 });
+		await idleServerStatus.waitForExist({ timeout: TIMEOUT.SERVER_RIBBON_UPDATE });
 
 		// Expect the Jupyter checkpoints folder to still exist
 		const checkpointsFolderExists = await folderExists(checkpointsFolder);
@@ -78,7 +78,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 
 		// Check that the notebook content is loaded
 		const jupyterWebview = browser.$('webview.jupyter-webview');
-		await jupyterWebview.waitForExist({ timeout: 35000 });
+		await jupyterWebview.waitForExist({ timeout: TIMEOUT.START_SERVER });
 
 		// Check that no checkpoints folder is created
 		let vaultPath = await obsidianPage.getVaultPath();
@@ -87,7 +87,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 		}
 		let checkpointsFolder = path.join(vaultPath, 'Checkpoints', '.ipynb_checkpoints');
 		// Wait for exactly 10 seconds before performing the check
-		await browser.pause(10000);
+		await browser.pause(TIMEOUT.CHECKPOINTS_FOLDER);
 		let checkpointsFolderExists = await folderExists(checkpointsFolder);
 		expect(checkpointsFolderExists).toBe(
 			false,

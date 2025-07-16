@@ -5,6 +5,22 @@ import { DEFAULT_SETTINGS, JupyterSettings } from '../bridge';
 import { lstat } from 'fs/promises';
 
 /**
+ * Constants for various timeouts used in tests. Centralizes timeout
+ * values to ensure consistency and ease of maintenance.
+ */
+export enum TIMEOUT {
+	CREATE_NOTEBOOK = 5000,
+	START_SERVER = 60000,
+	SERVER_RIBBON_UPDATE = 5000,
+	CONTEXT_MENU_UPDATE = 2000,
+	CHECKPOINTS_FOLDER = 15000,
+	TAB_UPDATE = 5000,
+	NOTEBOOK_LOAD = 10000,
+	STATUS_NOTICE = 2000,
+	NOTICES_CLEARED = 10000
+}
+
+/**
  * Finds the element representing the specified file or folder in the Obsidian file tree.
  *
  * If the path contains multiple parts, the wanted element might not exist at the time of calling the function. This is because
