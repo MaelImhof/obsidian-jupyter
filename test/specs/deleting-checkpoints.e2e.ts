@@ -28,7 +28,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 
 		// Check that the notebook content is loaded
 		const jupyterWebview = browser.$('webview.jupyter-webview');
-		await jupyterWebview.waitForExist({ timeout: 330000 });
+		await jupyterWebview.waitForExist({ timeout: 35000 });
 
 		// Check that a Jupyter checkpoint folder is created
 		let vaultPath = await obsidianPage.getVaultPath();
@@ -41,7 +41,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 				// Check that the checkpoints folder was indeed created in the file system
 				return await folderExists(checkpointsFolder);
 			},
-			{ timeout: 130000 }
+			{ timeout: 15000 }
 		);
 
 		// Stop the Jupyter server
@@ -49,7 +49,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 			'.side-dock-ribbon-action[aria-label="Stop Jupyter Server"]'
 		);
 		await runningServerStatus.click();
-		await idleServerStatus.waitForExist({ timeout: 30000 });
+		await idleServerStatus.waitForExist({ timeout: 5000 });
 
 		// Expect the Jupyter checkpoints folder to still exist
 		const checkpointsFolderExists = await folderExists(checkpointsFolder);
@@ -78,7 +78,7 @@ describe.only('Jupyter checkpoints deletion', async () => {
 
 		// Check that the notebook content is loaded
 		const jupyterWebview = browser.$('webview.jupyter-webview');
-		await jupyterWebview.waitForExist({ timeout: 330000 });
+		await jupyterWebview.waitForExist({ timeout: 35000 });
 
 		// Check that no checkpoints folder is created
 		let vaultPath = await obsidianPage.getVaultPath();
