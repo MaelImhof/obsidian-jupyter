@@ -2,7 +2,7 @@
 
 Jupyter for Obsidian is a simple plugin and does basically two things:
 
-1. Run a Jupyter server for you (instead of opening a terminal and typing `juypter [...]`).
+1. Run a Jupyter server for you (instead of opening a terminal and typing `jupyter [...]`).
 2. Tell Obsidian how to open `.ipynb` files.
 
 This is a very minimal plugin, hence I'm interested in your [feedback](./index.md#providing-feedback) to build from here.
