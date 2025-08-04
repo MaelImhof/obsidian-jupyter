@@ -58,6 +58,13 @@ export default defineConfig({
 				text: "Contributor Guide",
 				items: [{ text: "Contribute", link: "/contribute/" }],
 			},
+			{
+				text: "Technical Reference",
+				items: [
+					{ text: "Introduction", link: "/technical/" },
+					{ text: "Testing", link: "/technical/testing" },
+				]
+			}
 		],
 
 		socialLinks: [

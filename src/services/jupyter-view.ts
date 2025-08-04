@@ -1,4 +1,4 @@
-import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from 'obsidian';
+import { ButtonComponent, FileView, ItemView, TFile, WorkspaceLeaf } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 import {
 	JupyterEnvironment,
@@ -171,7 +171,6 @@ export class EmbeddedJupyterView extends FileView {
 		// @ts-ignore for this.app.appId
 		this.webviewEl.setAttribute('partition', 'persist:surfing-vault-' + this.app.appId);
 		this.webviewEl.addClass('jupyter-webview', 'jupyter-webview-loading');
-		this.webviewEl.setAttribute('src', env.getFileUrl(this.openedFile.path) as string);
 		this.webviewEl.addEventListener(
 			'dom-ready',
 			((_event: any) => {
@@ -184,6 +183,8 @@ export class EmbeddedJupyterView extends FileView {
 				this.webviewEl?.removeClass('jupyter-webview-loading');
 			}).bind(this)
 		);
+
+		this.webviewEl.setAttribute('src', env.getFileUrl(this.openedFile.path) as string);
 	}
 
 	protected async onOpen() {

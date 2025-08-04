@@ -19,6 +19,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/electron": "^1.4.38",
     "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
     "@typescript-eslint/eslint-plugin": "5.29.0",
@@ -30,6 +31,7 @@
     "@wdio/spec-reporter": "^9.15.0",
     "@wdio/types": "^9.15.0",
     "builtin-modules": "3.3.0",
+    "electron": "^32.2.3",
     "esbuild": "0.17.3",
     "mocha": "^11.6.0",
     "obsidian": "latest",
