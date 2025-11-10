@@ -1,14 +1,56 @@
-# Jupyter for Obsidian
+<h1 align="center">
+    <br>
+    <a href="https://jupyter.mael.im">
+        <img
+            src="docs/public/images/logo.png"
+            alt="Jupyter for Obsidian"
+            width="200"
+        />
+    </a>
+    <br>
+    Jupyter for Obsidian
+    <br>
+</h1>
 
-Run and use Jupyter Notebook or Jupyter Lab without ever leaving Obsidian. Open `.ipynb` files in the Obsidian editor, edit them, run them with ease.
+<h4 align="center">
+    Run and use Jupyter notebooks without ever leaving Obsidian.
+</h4>
 
-For more information, please refer to the documentation website [https://jupyter.mael.im](https://jupyter.mael.im).
+<p align="center">
+    <a href="https://github.com/MaelImhof/obsidian-jupyter/releases">
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/MaelImhof/obsidian-jupyter?include_prereleases&sort=semver&display_name=tag&color=blue" />
+    </a>
+    <a href="https://discord.gg/KgkwwRJ3mQ">
+        <img alt="Discord" src="https://img.shields.io/badge/chat-on_discord-purple" />
+    </a>
+</p>
 
-## Structure of the repository
+<p align="center">
+    <a href="https://jupyter.mael.im/guide/">User Guide</a> •
+    <a href="https://jupyter.mael.im/guide/troubleshooting">Troubleshooting</a> •
+    <a href="https://jupyter.mael.im/contribute/">Contribute</a>
+</p>
 
-> [!NOTE]
-> `main.js`, `manifest.json` and `versions.json` are in `test-vault/.obsidian/plugins/jupyter/`. They are copied to the root directory when running `npm run build`.
+<p align="center">
+    <img src="docs/public/images/jupyter-inside-obsidian.png" alt="Screenshot">
+</p>
 
-- **`docs`** contains a [Vitepress](https://vitepress.dev/) installation used to generate the documentation website.
-- **`src`** contains the TypeScript code for the plugin.
-- **`test-vault`** contains a test Obsidian vault. Run `npm run dev` to watch for changes and update the plugin in this vault when needed. The hot-reload plugin is also installed, such that the Jupyter plugin will automatically be reloaded.
+Open `.ipynb` files with Jupyter Notebook or Jupyter Lab directly within the Obsidian editor. Edit notebooks and run their code blocks with ease.
+
+## Features
+
+- **`.ipynb` support**
+
+    See, open and edit `.ipynb` files inside Obsidian
+
+- **Jupyter server management**
+
+    Start and stop Jupyter without ever seeing a terminal, using Obsidian commands and/or ribbon icons.
+
+- **Checkpoints deletion**
+
+    Configure the plugin to automatically delete Jupyter checkpoints to keep the vault clean.
+
+- **Simple interface**
+
+    By default, the simple interface mode of Jupyter is used, leading to an uncluttered editor.
