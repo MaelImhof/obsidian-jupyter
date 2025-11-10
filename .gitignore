@@ -18,6 +18,9 @@ node_modules
 # Exclude sourcemaps
 *.map
 
+# Exclude Python virtual environment
+.venv
+
 # =========================
 # Docs
 # =========================
