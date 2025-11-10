@@ -312,14 +312,14 @@ export class JupyterEnvironment {
 		// If not found yet, parse what Jupyter writes to the console to find
 		// the port and the token to authenticate with.
 		if (this.status == JupyterEnvironmentStatus.STARTING) {
-			const regex = new RegExp(
-				`http:\/\/localhost:(\\d+)\/(?:${this.runningType === JupyterEnvironmentType.NOTEBOOK ? 'tree' : 'lab'})\\?token=(\\w+)`
-			);
-			const match = data.match(regex);
-			if (match) {
+			const portRegex = new RegExp(`http:\/\/localhost:(\\d+)`);
+			const tokenRegex = new RegExp(`token=(\\w+)`);
+			const portMatch = data.match(portRegex);
+			const tokenMatch = data.match(tokenRegex);
+			if (portMatch && tokenMatch) {
 				this.jupyterTimoutListener.cancel();
-				this.jupyterPort = parseInt(match[1]);
-				this.jupyterToken = match[2];
+				this.jupyterPort = parseInt(portMatch[1]);
+				this.jupyterToken = tokenMatch[1];
 				this.status = JupyterEnvironmentStatus.RUNNING;
 				await this.events.emit(JupyterEnvironmentEvent.READY, this);
 				await this.events.emit(JupyterEnvironmentEvent.CHANGE, this);
