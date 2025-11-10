@@ -33,3 +33,12 @@ If you need to perform a modification of the plugin's files for your contributio
 6. **Admire your work getting merged** once everything has been accepted, sit back and relax.
 
 Thank you in advance for your contribution, I'm looking forward to your PR !
+
+## Structure of the repository
+
+> [!NOTE]
+> `main.js`, `manifest.json` and `versions.json` are in `test-vault/.obsidian/plugins/jupyter/`. They are copied to the root directory when running `npm run build`.
+
+- **`docs`** contains a [Vitepress](https://vitepress.dev/) installation used to generate the documentation website.
+- **`src`** contains the TypeScript code for the plugin.
+- **`test-vault`** contains a test Obsidian vault. Run `npm run dev` to watch for changes and update the plugin in this vault when needed. The hot-reload plugin is also installed, such that the Jupyter plugin will automatically be reloaded.
