@@ -129,7 +129,8 @@ function displayModuleNotFound(plugin: JupyterForObsidian) {
 				moduleName +
 				' as the Jupyter environment.',
 			'Please install it by running the following command:',
-			{ markdown: '```bash\n' + moduleCommand + '\n```' }
+			{ markdown: '```bash\n' + moduleCommand + '\n```' },
+			'Note that this command assumes that pip is available in the selected Python environment. See the troubleshooting guide for more information.'
 		];
 	}
 
