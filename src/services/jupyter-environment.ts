@@ -3,9 +3,9 @@ import Emittery, { UnsubscribeFunction } from 'emittery';
 import { Debouncer, debounce } from 'obsidian';
 import { delimiter as path_delimiter } from 'path';
 
-// TODO: Add an option for `python3`
 export enum PythonExecutableType {
 	PYTHON = 'python',
+	PYTHON3 = 'python3',
 	PATH = 'path'
 }
 

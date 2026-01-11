@@ -193,6 +193,8 @@ export function getPythonExecutablePath(settings: Settings): string {
 	switch (settings.pythonExecutable) {
 		case PythonExecutableType.PYTHON:
 			return 'python';
+		case PythonExecutableType.PYTHON3:
+			return 'python3';
 		case PythonExecutableType.PATH:
 			return settings.pythonExecutablePath;
 	}
