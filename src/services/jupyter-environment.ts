@@ -423,7 +423,7 @@ export class JupyterEnvironment {
 		if (value >= 0) {
 			this.jupyterTimeoutMs = value;
 			if (value > 0) {
-				// TODO: Cancel any previously existing listener before replacing it
+				this.jupyterTimeoutListener.cancel();
 				this.jupyterTimeoutListener = debounce(
 					this.onJupyterTimeout.bind(this),
 					this.jupyterTimeoutMs,
