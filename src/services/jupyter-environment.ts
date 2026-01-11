@@ -48,11 +48,75 @@ export enum JupyterEnvironmentStatus {
 	EXITED = 'exited'
 }
 
+/**
+ * Enumeration of possible errors that can occur and result in Jupyter not starting
+ * or crashing unexpectedly.
+ */
 export enum JupyterEnvironmentError {
-	NONE = 'No error was encountered.',
-	UNABLE_TO_START_JUPYTER = 'Jupyter process could not be spawned.',
+	/**
+	 * The Jupyter process could not be started for an unknown reason.
+	 *
+	 * Used when Node's `child_process.spawn` function throws an error, which is not supposed
+	 * to happen but is still accounted for as a defensive programming measure.
+	 */
+	UNABLE_TO_SPAWN_JUPYTER = 'Jupyter process could not be spawned.',
+
+	/**
+	 * The Python executable provided by the user (`python`, `python3`, or a custom path) was not found.
+	 *
+	 * This can happen for example if the user defines `python` as the executable on a Linux system, where
+	 * the use of `python3` is required. This can also happen if Python is not installed.
+	 *
+	 * Note: this error code corresponds to `child_process.spawn`'s `ENOENT` error code. According to Node.js
+	 * documentation, this error code can also occur when the provided `cwd` does not exist. However, in our
+	 * use-case, this second scenario is very unlikely to happen, because the Jupyter environment's path
+	 * is controlled by the plugin and corresponds to the Obsidian vault's root path.
+	 */
+	EXECUTABLE_NOT_FOUND = 'Python executable not found.',
+
+	/**
+	 * Corresponds to `child_process.spawn`'s `EACCES` and `EPERM` error codes.
+	 *
+	 * This can happen if the user does not have permission to execute the Python executable or to access the
+	 * Jupyter module within the selected Python environment. It can also happen if the executable is not
+	 * marked as executable (on Unix systems).
+	 */
+	PERMISSION_DENIED = 'Permission denied when trying to start Jupyter.',
+
+	/**
+	 * The selected Python environment works, but the Jupyter module is not installed in it.
+	 *
+	 * This can happen if the user has not installed Jupyter Notebook or JupyterLab in the selected
+	 * Python environment. It can be resolved by installing either Jupyter Lab or Jupyter Notebook,
+	 * with the commands `pip install jupyterlab` or `pip install notebook` respectively.
+	 */
+	MODULE_NOT_FOUND = 'Jupyter module not found in the selected Python environment.',
+
+	/**
+	 * The Jupyter process exited with a non-zero exit code, indicating that an error occurred.
+	 *
+	 * This can occur both in the starting phase (for example if Jupyter fails to start properly), or
+	 * after having been started (for example if Jupyter crashes while running).
+	 */
 	JUPYTER_EXITED_WITH_ERROR = 'Jupyter process crashed.',
+
+	/**
+	 * The Jupyter process exited with a zero exit code while it was still starting up,
+	 * indicating that it exited without encountering an error, but before being ready to
+	 * accept connections.
+	 *
+	 * This can happen if Jupyter is misconfigured, for example if the configuration
+	 * contains an `exit()` instruction.
+	 */
 	JUPYTER_EXITED_WITHOUT_ERROR = 'Jupyter process exited.',
+
+	/**
+	 * The Jupyter process took too long to start, and was assumed to be stuck.
+	 *
+	 * This can happen if Jupyter is misconfigured, or if the system is under heavy load.
+	 * It can be resolved by increasing the Jupyter startup timeout in the plugin settings,
+	 * or by fixing the underlying issue causing Jupyter to start slowly.
+	 */
 	JUPYTER_STARTING_TIMEOUT = 'Jupyter process took too long to start, assumed something was wrong.'
 }
 
@@ -84,15 +148,12 @@ export class JupyterEnvironment {
 	private aboutToStart: boolean = false;
 	private runningType: JupyterEnvironmentType | null = null;
 
-	private jupyterExitListener: (code: number | null, signal: NodeJS.Signals | null) => void =
-		this.onJupyterExit.bind(this);
-
-	private jupyterTimoutListener: Debouncer<unknown[], unknown> = debounce(
+	private jupyterTimeoutListener: Debouncer<unknown[], unknown> = debounce(
 		this.onJupyterTimeout.bind(this),
 		this.jupyterTimeoutMs,
 		true
 	);
-	private jupyerTimedOut: boolean = false;
+	private jupyterTimedOut: boolean = false;
 
 	/**
 	 * Indicates whether this Jupyter environment instance has been fully
@@ -245,18 +306,37 @@ export class JupyterEnvironment {
 			this.aboutToStart = false;
 			await this.events.emit(JupyterEnvironmentEvent.ERROR, [
 				this,
-				JupyterEnvironmentError.UNABLE_TO_START_JUPYTER
+				JupyterEnvironmentError.UNABLE_TO_SPAWN_JUPYTER
 			]);
 			return;
 		}
 
+		let handled = false;
 		this.jupyterProcess.stderr.on('data', this.processJupyterOutput.bind(this));
 		this.jupyterProcess.stdout.on('data', this.processJupyterOutput.bind(this));
-		this.jupyterProcess.on('exit', this.jupyterExitListener);
-		this.jupyterProcess.on('error', this.jupyterExitListener);
+		this.jupyterProcess.on(
+			'error',
+			((err: Error & { code?: string }) => {
+				// Ensure only either error or close runs, not both
+				if (handled) return;
+				handled = true;
+
+				this.onSpawnError(err);
+			}).bind(this)
+		);
+		this.jupyterProcess.on(
+			'close',
+			((_code: number | null, _signal: NodeJS.Signals | null) => {
+				// Ensure only either error or close runs, not both
+				if (handled) return;
+				handled = true;
+
+				this.onJupyterClose(_code, _signal);
+			}).bind(this)
+		);
 
 		if (this.jupyterTimeoutMs > 0) {
-			this.jupyterTimoutListener();
+			this.jupyterTimeoutListener();
 		}
 
 		this.runningType = this.type;
@@ -297,7 +377,7 @@ export class JupyterEnvironment {
 
 	private onJupyterTimeout() {
 		if (this.status == JupyterEnvironmentStatus.STARTING) {
-			this.jupyerTimedOut = true;
+			this.jupyterTimedOut = true;
 			this.exit();
 		}
 	}
@@ -317,7 +397,7 @@ export class JupyterEnvironment {
 			const portMatch = data.match(portRegex);
 			const tokenMatch = data.match(tokenRegex);
 			if (portMatch && tokenMatch) {
-				this.jupyterTimoutListener.cancel();
+				this.jupyterTimeoutListener.cancel();
 				this.jupyterPort = parseInt(portMatch[1]);
 				this.jupyterToken = tokenMatch[1];
 				this.status = JupyterEnvironmentStatus.RUNNING;
@@ -343,7 +423,8 @@ export class JupyterEnvironment {
 		if (value >= 0) {
 			this.jupyterTimeoutMs = value;
 			if (value > 0) {
-				this.jupyterTimoutListener = debounce(
+				// TODO: Cancel any previously existing listener before replacing it
+				this.jupyterTimeoutListener = debounce(
 					this.onJupyterTimeout.bind(this),
 					this.jupyterTimeoutMs,
 					true
@@ -430,18 +511,61 @@ export class JupyterEnvironment {
 		}
 	}
 
-	private async onJupyterExit(_code: number | null, _signal: NodeJS.Signals | null) {
+	private async onSpawnError(err: Error & { code?: string }) {
+		if (this.jupyterProcess === null) {
+			return;
+		}
+
+		switch (err.code) {
+			case 'ENOENT':
+				await this.events.emit(JupyterEnvironmentEvent.ERROR, [
+					this,
+					JupyterEnvironmentError.EXECUTABLE_NOT_FOUND
+				]);
+				break;
+			case 'EACCES':
+			case 'EPERM':
+				await this.events.emit(JupyterEnvironmentEvent.ERROR, [
+					this,
+					JupyterEnvironmentError.PERMISSION_DENIED
+				]);
+				break;
+			default:
+				await this.events.emit(JupyterEnvironmentEvent.ERROR, [
+					this,
+					JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR
+				]);
+				break;
+		}
+
+		await this.setProcessStateToExited();
+	}
+
+	private async onJupyterClose(_code: number | null, _signal: NodeJS.Signals | null) {
 		if (this.jupyterProcess === null) {
 			return;
 		}
 
 		if (this.jupyterProcess.exitCode !== null && this.jupyterProcess.exitCode !== 0) {
-			await this.events.emit(JupyterEnvironmentEvent.ERROR, [
-				this,
-				JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR
-			]);
-		} else if (this.jupyerTimedOut) {
-			this.jupyerTimedOut = false;
+			// If an error was encountered, maybe it was because Jupyter is not installed
+			// in the selected Python environment.
+			const lastLog = this.getLastLog();
+			if (
+				lastLog.includes(': No module named jupyterlab') ||
+				lastLog.includes(': No module named notebook')
+			) {
+				await this.events.emit(JupyterEnvironmentEvent.ERROR, [
+					this,
+					JupyterEnvironmentError.MODULE_NOT_FOUND
+				]);
+			} else {
+				await this.events.emit(JupyterEnvironmentEvent.ERROR, [
+					this,
+					JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR
+				]);
+			}
+		} else if (this.jupyterTimedOut) {
+			this.jupyterTimedOut = false;
 			await this.events.emit(JupyterEnvironmentEvent.ERROR, [
 				this,
 				JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT
@@ -453,6 +577,10 @@ export class JupyterEnvironment {
 			]);
 		}
 
+		await this.setProcessStateToExited();
+	}
+
+	private async setProcessStateToExited() {
 		this.jupyterProcess = null;
 		this.jupyterPort = null;
 		this.jupyterToken = null;
