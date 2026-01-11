@@ -37,7 +37,7 @@ export function displayJupyterErrorModal(
 function displayUnableToSpawnJupyter(plugin: JupyterForObsidian) {
 	new JupyterModal(
 		plugin.app,
-		"Couldn't start Jupyter",
+		'Spawning Error',
 		[
 			'Jupyter could not even be started.',
 			'Please check your Python executable and make sure Jupyter is installed in the corresponding environment.'
