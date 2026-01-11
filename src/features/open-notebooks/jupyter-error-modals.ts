@@ -1,6 +1,7 @@
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 import { JupyterEnvironmentError, JupyterEnvironmentType } from '@/services/jupyter-environment';
 import { JupyterModal } from '@/services/jupyter-modal';
+import { getPythonExecutablePath } from './open-notebooks-feature';
 
 export function displayJupyterErrorModal(
 	plugin: JupyterForObsidian,
@@ -104,17 +105,18 @@ function displayPermissionDenied(plugin: JupyterForObsidian) {
 }
 
 function displayModuleNotFound(plugin: JupyterForObsidian) {
+	let pythonExecutable = getPythonExecutablePath(plugin.settings);
 	let requiredModule = plugin.settings.jupyterEnvType;
 	let moduleName = '';
 	let moduleCommand = '';
 	switch (requiredModule) {
 		case JupyterEnvironmentType.LAB:
 			moduleName = 'Jupyter Lab';
-			moduleCommand = 'pip install jupyterlab';
+			moduleCommand = pythonExecutable + ' -m pip install jupyterlab';
 			break;
 		case JupyterEnvironmentType.NOTEBOOK:
 			moduleName = 'Jupyter Notebook';
-			moduleCommand = 'pip install notebook';
+			moduleCommand = pythonExecutable + ' -m pip install notebook';
 			break;
 	}
 
@@ -128,8 +130,8 @@ function displayModuleNotFound(plugin: JupyterForObsidian) {
 			'Your settings indicate that you want to use ' +
 				moduleName +
 				' as the Jupyter environment.',
-			'Please install it by running the following command in the corresponding Python environment:',
-			moduleCommand
+			'Please install it by running the following command:',
+			{ markdown: '```bash\n' + moduleCommand + '\n```' }
 		];
 	}
 
@@ -161,12 +163,15 @@ function displayJupyterExitedWithError(plugin: JupyterForObsidian) {
 	if (lastLog === '') {
 		lastLogMessage = ['Jupyter did not log any message before crashing.'];
 	} else {
-		lastLogMessage = ['The last log message from Jupyter was:', lastLog];
+		lastLogMessage = [
+			'The last log message from Jupyter was:',
+			{ markdown: '```\n' + lastLog + '\n```' }
+		];
 	}
 	new JupyterModal(
 		plugin.app,
 		'Jupyter crashed',
-		['Jupyter encountered an error and stopped unexpectedly.', 'The last ', ...lastLogMessage],
+		['Jupyter encountered an error and stopped unexpectedly.', ...lastLogMessage],
 		[
 			{
 				text: 'Open troubleshooting guide',
@@ -183,15 +188,24 @@ function displayJupyterExitedWithError(plugin: JupyterForObsidian) {
 }
 
 function displayJupyterExitedWithoutError(plugin: JupyterForObsidian) {
+	let lastLog = plugin.env.getLastLog();
+	let lastLogMessage = [];
+	if (lastLog === '') {
+		lastLogMessage = ['Jupyter did not log any message before exiting.'];
+	} else {
+		lastLogMessage = [
+			'The last log message from Jupyter was:',
+			{ markdown: '```\n' + lastLog + '\n```' }
+		];
+	}
+
 	new JupyterModal(
 		plugin.app,
 		'Jupyter exited',
 		[
 			'Jupyter crashed while starting but did not encounter an error.',
 			"This is a very rare case and might be due to an 'exit()' statement that got lost in your Jupyter configuration.",
-			'Use the button below to open the troubleshooting guide.',
-			'Here is the last log message from Jupyter:',
-			plugin.env.getLastLog()
+			...lastLogMessage
 		],
 		[
 			{
@@ -276,5 +290,3 @@ function displayJupyterStartingTimeout(plugin: JupyterForObsidian) {
 		]
 	).open();
 }
-
-// TODO: Make the Jupyter's last log display in a code block or at least in a different format

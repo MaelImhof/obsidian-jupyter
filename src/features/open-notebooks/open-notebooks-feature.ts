@@ -139,21 +139,15 @@ export class OpenNotebooksFeature implements IFeature {
 		// We also need to apply the initial settings to the environment.
 		env.printDebugMessages(settings.debugConsole);
 
-		proxy.on('change:pythonExecutable', (newVal, _oldVal) => {
-			env.setPythonExecutable(
-				newVal === PythonExecutableType.PYTHON ? 'python' : settings.pythonExecutablePath
-			);
+		proxy.on('change:pythonExecutable', (_newVal, _oldVal) => {
+			env.setPythonExecutable(getPythonExecutablePath(settings));
 		});
 		proxy.on('change:pythonExecutablePath', (newVal, _oldVal) => {
 			if (settings.pythonExecutable === PythonExecutableType.PATH) {
 				env.setPythonExecutable(newVal);
 			}
 		});
-		env.setPythonExecutable(
-			settings.pythonExecutable === PythonExecutableType.PYTHON
-				? 'python'
-				: settings.pythonExecutablePath
-		);
+		env.setPythonExecutable(getPythonExecutablePath(settings));
 
 		proxy.on('change:jupyterTimeoutMs', (newVal, _oldVal) => {
 			env.setJupyterTimeoutMs(newVal);
@@ -184,5 +178,22 @@ export class OpenNotebooksFeature implements IFeature {
 				this.serverRibbonIcon = null;
 			}
 		});
+	}
+}
+
+/**
+ * Util function to determine what the actual Python executable path is based on
+ * the provided plugin's settings.
+ *
+ * For example, if the user selected `Python` as the executable type, this function
+ * will return simply `python`. If the user selected `Path`, it will return the
+ * path specified in the settings.
+ */
+export function getPythonExecutablePath(settings: Settings): string {
+	switch (settings.pythonExecutable) {
+		case PythonExecutableType.PYTHON:
+			return 'python';
+		case PythonExecutableType.PATH:
+			return settings.pythonExecutablePath;
 	}
 }
