@@ -32,8 +32,6 @@ export function displayJupyterErrorModal(
 	}
 }
 
-// TODO: Change all links to troubleshooting guides once the documentation is done
-
 function displayUnableToSpawnJupyter(plugin: JupyterForObsidian) {
 	new JupyterModal(
 		plugin.app,
@@ -47,7 +45,7 @@ function displayUnableToSpawnJupyter(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#jupyter-process-could-not-be-spawned',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/spawning-error',
 						'_blank'
 					);
 				},
@@ -70,7 +68,7 @@ function displayExecutableNotFound(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#python-executable-not-found',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/python-executable-not-found',
 						'_blank'
 					);
 				},
@@ -94,7 +92,7 @@ function displayPermissionDenied(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#permission-denied',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/permission-denied',
 						'_blank'
 					);
 				},
@@ -147,7 +145,7 @@ function displayModuleNotFound(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#jupyter-module-not-found',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/module-not-found',
 						'_blank'
 					);
 				},
@@ -177,7 +175,7 @@ function displayJupyterExitedWithError(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#jupyter-process-crashed',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/jupyter-crashed',
 						'_blank'
 					);
 				},
@@ -212,7 +210,7 @@ function displayJupyterExitedWithoutError(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/troubleshooting#jupyter-process-exited',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/jupyter-exited',
 						'_blank'
 					);
 				},
@@ -243,7 +241,7 @@ function displayJupyterStartingTimeout(plugin: JupyterForObsidian) {
 					text: 'Open a ticket',
 					onClick: () => {
 						window.open(
-							'https://jupyter.mael.im/guide/troubleshooting#opening-a-ticket',
+							'https://jupyter.mael.im/handbook/troubleshooting/#opening-a-ticket',
 							'_blank'
 						);
 					},
@@ -281,7 +279,7 @@ function displayJupyterStartingTimeout(plugin: JupyterForObsidian) {
 				text: 'Open troubleshooting guide',
 				onClick: () => {
 					window.open(
-						'https://jupyter.mael.im/guide/troubleshooting#jupyter-timeout',
+						'https://jupyter.mael.im/handbook/troubleshooting/jupyter-errors/jupyter-timeout',
 						'_blank'
 					);
 				},
