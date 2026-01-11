@@ -17,7 +17,7 @@ export default defineConfig({
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [
 			{ text: "Home", link: "/" },
-			{ text: "Getting Started", link: "/guide/" },
+			{ text: "Getting Started", link: "/handbook/" },
 			{ text: "Contribute", link: "/contribute/" },
 		],
 
@@ -42,16 +42,33 @@ export default defineConfig({
 
 		sidebar: [
 			{
-				text: "User Guide",
+				text: "User Handbook",
 				items: [
-					{ text: "Getting Started", link: "/guide/" },
-					{ text: "Features", link: "/guide/features" },
-					{ text: "Settings", link: "/guide/settings" },
+					{ text: "Getting Started", link: "/handbook/" },
+					{ text: "Features", link: "/handbook/features" },
+					{ text: "Settings", link: "/handbook/settings" },
 					{
-						text: "Miniconda and Conda",
-						link: "/guide/miniconda-and-conda",
+						text: "Guides",
+						collapsed: false,
+						items: [
+							{ text: "Find your Python executable", link: "/handbook/guides/find-python-executable" },
+							{ text: "Access Jupyter logs", link: "/handbook/guides/access-jupyter-logs" },
+						]
 					},
-					{ text: "Troubleshooting", link: "/guide/troubleshooting" },
+					{
+						text: "Troubleshooting",
+						collapsed: false,
+						items: [
+							{ text: 'Introduction', link: "/handbook/troubleshooting/" },
+							{ text: "Spawning error", link: "/handbook/troubleshooting/jupyter-errors/spawning-error" },
+							{ text: "Python executable not found", link: "/handbook/troubleshooting/jupyter-errors/python-executable-not-found" },
+							{ text: "Permission denied", link: "/handbook/troubleshooting/jupyter-errors/permission-denied" },
+							{ text: "Module not found", link: "/handbook/troubleshooting/jupyter-errors/module-not-found" },
+							{ text: "Jupyter crashed", link: "/handbook/troubleshooting/jupyter-errors/jupyter-crashed" },
+							{ text: "Jupyter exited", link: "/handbook/troubleshooting/jupyter-errors/jupyter-exited" },
+							{ text: "Jupyter timeout", link: "/handbook/troubleshooting/jupyter-errors/jupyter-timeout" },
+						]
+					},
 				],
 			},
 			{

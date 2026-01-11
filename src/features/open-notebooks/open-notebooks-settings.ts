@@ -118,6 +118,7 @@ export function registerOpenNotebookSettingsUI(tab: JupyterSettingsTab): void {
 				.addDropdown((dropdown: DropdownComponent) => {
 					dropdown
 						.addOption(PythonExecutableType.PYTHON, '`python` command')
+						.addOption(PythonExecutableType.PYTHON3, '`python3` command')
 						.addOption(PythonExecutableType.PATH, 'Specified executable path')
 						.setValue(plugin.settings.pythonExecutable)
 						.onChange((value: PythonExecutableType) => {
