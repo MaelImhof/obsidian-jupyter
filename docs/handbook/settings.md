@@ -8,7 +8,7 @@ A rundown of all the settings is available here.
 
 ### Python Executable to Use
 
-Whether to use the simple `python` command to start Jupyter, or a particular Python executable file.
+Whether to use the simple `python` command to start Jupyter, the `python3` command, or a particular Python executable file.
 
 If set to `Specified executable path`, the [Python executable path](#python-executable-path) setting will be used.
 
@@ -16,7 +16,7 @@ Set to `python` by default.
 
 ### Python Executable Path
 
-The Python executable path to use to start Jupyter. This setting has no effect if [Python executable to use](#python-executable-to-use) is set to `python`.
+The Python executable path to use to start Jupyter. This setting has no effect if [Python executable to use](#python-executable-to-use) is set to `python` or `python3`.
 
 Empty by default.
 

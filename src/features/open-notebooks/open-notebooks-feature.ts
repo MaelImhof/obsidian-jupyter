@@ -10,8 +10,8 @@ import {
 import { Settings, SettingsProxy } from '@/settings';
 import { registerOpenNotebookSettingsUI } from './open-notebooks-settings';
 import { Notice, setIcon, setTooltip } from 'obsidian';
-import { JupyterModal } from '@/services/jupyter-modal';
 import { EmbeddedJupyterView } from '@/services/jupyter-view';
+import { displayJupyterErrorModal } from './jupyter-error-modals';
 
 /**
  * Core feature of the Jupyter for Obsidian plugin that allows users to
@@ -118,103 +118,7 @@ export class OpenNotebooksFeature implements IFeature {
 	 * troubleshooting guide.
 	 */
 	private onEnvironmentError(_env: JupyterEnvironment, error: JupyterEnvironmentError): void {
-		if (error === JupyterEnvironmentError.JUPYTER_STARTING_TIMEOUT) {
-			new JupyterModal(
-				this.plugin.app,
-				'Jupyter Timeout',
-				[
-					'The Jupyter server took too long to start.',
-					'You can set in the settings the maximum time the plugin will wait for the server to start.',
-					'Your current timeout is set to ' +
-						this.plugin.settings.jupyterTimeoutMs / 1000 +
-						' second(s).',
-					this.plugin.settings.jupyterTimeoutMs < 15000
-						? 'This is a very short timeout and might not be enough for the server to start. Please try increasing it and see if the error disappears.'
-						: 'This timeout seems reasonable, hence the problem might be elsewhere depending on your specific situation.'
-				],
-				[
-					{
-						text: 'Open troubleshooting guide',
-						onClick: () => {
-							window.open(
-								'https://jupyter.mael.im/troubleshooting#jupyter-timeout',
-								'_blank'
-							);
-						},
-						closeOnClick: false
-					}
-				]
-			).open();
-		} else if (error === JupyterEnvironmentError.UNABLE_TO_START_JUPYTER) {
-			new JupyterModal(
-				this.plugin.app,
-				"Couldn't start Jupyter",
-				[
-					'Jupyter could not even be started.',
-					'Please check your Python executable and make sure Jupyter is installed in the corresponding environment.',
-					'Use the button below to open the troubleshooting guide.'
-				],
-				[
-					{
-						text: 'Open troubleshooting guide',
-						onClick: () => {
-							window.open(
-								'https://jupyter.mael.im/troubleshooting#jupyter-process-could-not-be-spawned',
-								'_blank'
-							);
-						},
-						closeOnClick: false
-					}
-				]
-			);
-		} else if (error === JupyterEnvironmentError.JUPYTER_EXITED_WITH_ERROR) {
-			new JupyterModal(
-				this.plugin.app,
-				'Jupyter crashed',
-				[
-					'Jupyter crashed while starting',
-					'Use the button below to open the troubleshooting guide.',
-					'Here is the last log message from Jupyter:',
-					this.plugin.env.getLastLog()
-				],
-				[
-					{
-						text: 'Open troubleshooting guide',
-						onClick: () => {
-							window.open(
-								'https://jupyter.mael.im/troubleshooting#jupyter-process-crashed',
-								'_blank'
-							);
-						},
-						closeOnClick: false
-					}
-				]
-			).open();
-		} else {
-			new JupyterModal(
-				this.plugin.app,
-				'Jupyter exited',
-				[
-					'Jupyter crashed while starting but did not encounter an error.',
-					"This is a very rare case and might be due to an 'exit()' statement that got lost in your Jupyter configuration.",
-					'Use the button below to open the troubleshooting guide.',
-					'Here is the last log message from Jupyter:',
-					this.plugin.env.getLastLog()
-				],
-				[
-					{
-						text: 'Open troubleshooting guide',
-						onClick: () => {
-							window.open(
-								'https://jupyter.mael.im/troubleshooting#jupyter-process-exited',
-								'_blank'
-							);
-						},
-						closeOnClick: false
-					}
-				]
-			).open();
-		}
+		displayJupyterErrorModal(this.plugin, error);
 	}
 
 	/**
@@ -235,21 +139,15 @@ export class OpenNotebooksFeature implements IFeature {
 		// We also need to apply the initial settings to the environment.
 		env.printDebugMessages(settings.debugConsole);
 
-		proxy.on('change:pythonExecutable', (newVal, _oldVal) => {
-			env.setPythonExecutable(
-				newVal === PythonExecutableType.PYTHON ? 'python' : settings.pythonExecutablePath
-			);
+		proxy.on('change:pythonExecutable', (_newVal, _oldVal) => {
+			env.setPythonExecutable(getPythonExecutablePath(settings));
 		});
 		proxy.on('change:pythonExecutablePath', (newVal, _oldVal) => {
 			if (settings.pythonExecutable === PythonExecutableType.PATH) {
 				env.setPythonExecutable(newVal);
 			}
 		});
-		env.setPythonExecutable(
-			settings.pythonExecutable === PythonExecutableType.PYTHON
-				? 'python'
-				: settings.pythonExecutablePath
-		);
+		env.setPythonExecutable(getPythonExecutablePath(settings));
 
 		proxy.on('change:jupyterTimeoutMs', (newVal, _oldVal) => {
 			env.setJupyterTimeoutMs(newVal);
@@ -280,5 +178,24 @@ export class OpenNotebooksFeature implements IFeature {
 				this.serverRibbonIcon = null;
 			}
 		});
+	}
+}
+
+/**
+ * Util function to determine what the actual Python executable path is based on
+ * the provided plugin's settings.
+ *
+ * For example, if the user selected `Python` as the executable type, this function
+ * will return simply `python`. If the user selected `Path`, it will return the
+ * path specified in the settings.
+ */
+export function getPythonExecutablePath(settings: Settings): string {
+	switch (settings.pythonExecutable) {
+		case PythonExecutableType.PYTHON:
+			return 'python';
+		case PythonExecutableType.PYTHON3:
+			return 'python3';
+		case PythonExecutableType.PATH:
+			return settings.pythonExecutablePath;
 	}
 }
