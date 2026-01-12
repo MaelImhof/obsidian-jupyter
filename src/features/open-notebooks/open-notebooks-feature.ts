@@ -9,8 +9,8 @@ import {
 } from '@/services/jupyter-environment';
 import { Settings, SettingsProxy } from '@/settings';
 import { registerOpenNotebookSettingsUI } from './open-notebooks-settings';
-import { Notice, setIcon, setTooltip } from 'obsidian';
-import { EmbeddedJupyterView } from '@/services/jupyter-view';
+import { Notice, setIcon, setTooltip, TAbstractFile, TFile } from 'obsidian';
+import { EmbeddedJupyterView, getJupyterViews, JUPYTER_VIEW_TYPE } from '@/services/jupyter-view';
 import { displayJupyterErrorModal } from './jupyter-error-modals';
 
 /**
@@ -56,12 +56,47 @@ export class OpenNotebooksFeature implements IFeature {
 
 		// Let Obsidian know how to display Jupyter files
 		this.plugin.registerView(
-			'jupyter-view',
+			JUPYTER_VIEW_TYPE,
 			(leaf) => new EmbeddedJupyterView(leaf, this.plugin)
 		);
 
 		// Let Obsidian know which file extensions are Jupyter notebooks
-		this.plugin.registerExtensions(['ipynb'], 'jupyter-view');
+		this.plugin.registerExtensions(['ipynb'], JUPYTER_VIEW_TYPE);
+
+		// When a notebook file is deleted, close any views that have it open
+		this.plugin.registerEvent(
+			this.plugin.app.vault.on(
+				'delete',
+				(async (file: TAbstractFile) => {
+					// We only care about TFile instances
+					if (!(file instanceof TFile)) {
+						return;
+					}
+
+					// We only care about .ipynb files
+					if (!file.path.endsWith('.ipynb')) {
+						return;
+					}
+
+					// Close Jupyter views where this file is opened
+					const jupyterViews = getJupyterViews(this.plugin.app.workspace);
+					for (const jupyterView of jupyterViews) {
+						if (
+							jupyterView.file?.path === file.path ||
+							// Not sure why, but sometimes a file in the root directory will have a path that
+							// does not start with '/', thus the match won't be made and the view won't be closed,
+							// unless I manually add this condition below.
+							(file.parent === null && jupyterView.file?.path === '/' + file.name)
+						) {
+							await jupyterView.leaf.setViewState({
+								type: JUPYTER_VIEW_TYPE,
+								state: { file: null }
+							});
+						}
+					}
+				}).bind(this)
+			)
+		);
 	}
 
 	/**
