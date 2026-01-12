@@ -1,4 +1,4 @@
-import { ButtonComponent, FileView, TFile, WorkspaceLeaf } from 'obsidian';
+import { ButtonComponent, FileView, TFile, Workspace, WorkspaceLeaf } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 import {
 	JupyterEnvironment,
@@ -8,6 +8,13 @@ import {
 import { JupyterModalButton } from '@/services/jupyter-modal';
 
 export const JUPYTER_VIEW_TYPE = 'jupyter-view';
+
+/** Helper function to get active leaves of type EmbeddedJupyterView in the workspace. */
+export function getJupyterViews(workspace: Workspace): EmbeddedJupyterView[] {
+	return workspace
+		.getLeavesOfType(JUPYTER_VIEW_TYPE)
+		.flatMap((l) => (l.view instanceof EmbeddedJupyterView ? [l.view] : []));
+}
 
 /**
  * Core view for Jupyter documents. Handles situations where the Jupyter
@@ -191,6 +198,9 @@ export class EmbeddedJupyterView extends FileView {
 	}
 
 	protected async onClose() {
+		// Let the superclass clean up first
+		await super.onClose();
+
 		this.openedFile = null;
 		this.messageContainerEl = null;
 		this.messageHeaderEl = null;
