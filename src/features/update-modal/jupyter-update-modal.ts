@@ -199,9 +199,8 @@ export class UpdateModal extends Modal {
 				}).bind(this)
 			);
 
-		const contentDiv = contentEl.createDiv();
-
 		if (!this.releases || this.releases.length === 0) {
+			const contentDiv = contentEl.createDiv();
 			void MarkdownRenderer.render(
 				this.app,
 				`> [!FAILURE]\n> Release notes could not be retrieved. You can still look at the last releases [on GitHub](https://github.com/MaelImhof/obsidian-jupyter/releases) directly.`,
@@ -210,7 +209,7 @@ export class UpdateModal extends Modal {
 				new Component()
 			);
 		} else {
-			contentEl.createEl('h2', {
+			contentEl.createEl('h1', {
 				text: 'What changed?'
 			});
 
@@ -222,8 +221,9 @@ export class UpdateModal extends Modal {
 						results === null ? 'Could not load this changelog.' : results[1];
 					return `### [Jupyter for Obsidian v${release.tag_name}](https://github.com/MaelImhof/obsidian-jupyter/releases/tag/${release.tag_name})\n\n${addExtraHashToHeadings(changelog)}`;
 				})
-				.join('\n---\n');
+				.join('\n\n---\n\n');
 
+			const contentDiv = contentEl.createDiv();
 			void MarkdownRenderer.render(
 				this.app,
 				releaseNotes,
