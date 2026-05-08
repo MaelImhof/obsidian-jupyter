@@ -2,9 +2,6 @@
   "compilerOptions": {
     "types": [
       "vitest/globals",
-      "@wdio/globals/types",
-      "@wdio/mocha-framework",
-      "wdio-obsidian-service"
     ],
     "paths": {
       "@/*": [
