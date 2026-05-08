@@ -29,7 +29,7 @@ By default, the plugin will simply use a `python` shell command to run Jupyter. 
 
 You can do so by changing the setting [Python executable path](./settings.md#python-executable-path). If you want to use an executable path instead of the `python` command, you must also ensure that [Python executable to use](./settings.md#python-executable-to-use) is set to `Specified executable path`, otherwise the `python` command will still be used.
 
-In particular, if you use Conda or Miniconda, see [this guide](./miniconda-and-conda.md) to find the executable path you should use.
+In particular, if you use Conda or Miniconda, see [this guide](./guides/find-python-executable.md#using-conda-or-miniconda) to find the executable path you should use.
 
 ## Toggle Ribbon and Status Notices
 

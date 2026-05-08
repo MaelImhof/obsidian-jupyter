@@ -6,7 +6,7 @@ If you have nevertheless been presented with that error:
 
 1. Check that the configured Python executable is valid and works in the terminal. [This guide](../../guides/find-python-executable.md) can help you determine what your Python executable path should be.
 
-1. Check that Jupyter is installed in the provided Python environment. Depending on your [*Jupyter environment type*](./settings.md#jupyter-environment-type), you will want to check Jupyter Lab or Jupyter Notebook in particular. You can do this using the command
+1. Check that Jupyter is installed in the provided Python environment. Depending on your [*Jupyter environment type*](../../settings.md#jupyter-environment-type), you will want to check Jupyter Lab or Jupyter Notebook in particular. You can do this using the command
 
     ```bash
     # If using Jupyter Lab
