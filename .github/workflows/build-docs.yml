@@ -1,0 +1,30 @@
+name: Build Documentation
+
+on:
+  pull_request:
+    branches: main
+    paths:
+      - "docs/**"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  build-docs:
+    name: Build VitePress docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build documentation
+        run: npm run docs:build

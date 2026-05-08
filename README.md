@@ -26,8 +26,8 @@
 </p>
 
 <p align="center">
-    <a href="https://jupyter.mael.im/guide/">User Guide</a> •
-    <a href="https://jupyter.mael.im/guide/troubleshooting">Troubleshooting</a> •
+    <a href="https://jupyter.mael.im/handbook/">User Guide</a> •
+    <a href="https://jupyter.mael.im/handbook/troubleshooting/">Troubleshooting</a> •
     <a href="https://jupyter.mael.im/contribute/">Contribute</a>
 </p>
 
