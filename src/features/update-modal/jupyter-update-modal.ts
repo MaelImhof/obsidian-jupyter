@@ -105,7 +105,7 @@ function addExtraHashToHeadings(markdownText: string, numHashes = 1): string {
 }
 
 export class UpdateModal extends Modal {
-	private releases: Release[];
+	private releases!: Release[];
 	private lastAnnounced: string;
 	private toAnnounce: string;
 	private plugin: JupyterForObsidian;
@@ -217,7 +217,7 @@ export class UpdateModal extends Modal {
 			const releaseNotes = this.releases
 				.map((release) => {
 					const results = release.body.match(changeLogRegex);
-					let changelog =
+					const changelog =
 						results === null ? 'Could not load this changelog.' : results[1];
 					return `### [Jupyter for Obsidian v${release.tag_name}](https://github.com/MaelImhof/obsidian-jupyter/releases/tag/${release.tag_name})\n\n${addExtraHashToHeadings(changelog)}`;
 				})

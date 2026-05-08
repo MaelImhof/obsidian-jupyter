@@ -139,8 +139,10 @@ export function registerCreateNotebooksSettingsUI(tab: JupyterSettingsTab): void
 						.addOption(OpenCreatedNotebook.SPLIT, 'Open in a new split tab')
 						.addOption(OpenCreatedNotebook.WINDOW, 'Open in a detached window')
 						.setValue(plugin.settings.openCreatedFileMode)
-						.onChange((value: OpenCreatedNotebook) => {
-							plugin.settings.openCreatedFileMode = value;
+						.onChange((value: string) => {
+							// We assume the value is always valid since it is
+							// coming from the dropdown options
+							plugin.settings.openCreatedFileMode = value as OpenCreatedNotebook;
 						});
 				});
 		}

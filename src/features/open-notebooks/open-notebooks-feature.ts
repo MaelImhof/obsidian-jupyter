@@ -19,7 +19,7 @@ import { displayJupyterErrorModal } from './jupyter-error-modals';
  * (see the feature's settings for more details).
  */
 export class OpenNotebooksFeature implements IFeature {
-	private plugin: JupyterForObsidian;
+	private plugin!: JupyterForObsidian;
 	private serverRibbonIcon: HTMLElement | null = null;
 
 	async onload(plugin: JupyterForObsidian): Promise<void> {

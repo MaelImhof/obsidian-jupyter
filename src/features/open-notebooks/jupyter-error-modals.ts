@@ -103,8 +103,8 @@ function displayPermissionDenied(plugin: JupyterForObsidian) {
 }
 
 function displayModuleNotFound(plugin: JupyterForObsidian) {
-	let pythonExecutable = getPythonExecutablePath(plugin.settings);
-	let requiredModule = plugin.settings.jupyterEnvType;
+	const pythonExecutable = getPythonExecutablePath(plugin.settings);
+	const requiredModule = plugin.settings.jupyterEnvType;
 	let moduleName = '';
 	let moduleCommand = '';
 	switch (requiredModule) {
@@ -157,7 +157,7 @@ function displayModuleNotFound(plugin: JupyterForObsidian) {
 }
 
 function displayJupyterExitedWithError(plugin: JupyterForObsidian) {
-	let lastLog = plugin.env.getLastLog();
+	const lastLog = plugin.env.getLastLog();
 	let lastLogMessage = [];
 	if (lastLog === '') {
 		lastLogMessage = ['Jupyter did not log any message before crashing.'];
@@ -187,7 +187,7 @@ function displayJupyterExitedWithError(plugin: JupyterForObsidian) {
 }
 
 function displayJupyterExitedWithoutError(plugin: JupyterForObsidian) {
-	let lastLog = plugin.env.getLastLog();
+	const lastLog = plugin.env.getLastLog();
 	let lastLogMessage = [];
 	if (lastLog === '') {
 		lastLogMessage = ['Jupyter did not log any message before exiting.'];
@@ -224,7 +224,7 @@ function displayJupyterExitedWithoutError(plugin: JupyterForObsidian) {
 function displayJupyterStartingTimeout(plugin: JupyterForObsidian) {
 	// Adapt the error message to the timeout value from the settings
 	// If the timeout is too low, the user might want to try increasing it
-	let timeoutSeconds = plugin.settings.jupyterTimeoutMs / 1000;
+	const timeoutSeconds = plugin.settings.jupyterTimeoutMs / 1000;
 
 	// A timeout of 0 or less means no timeout, thus this error is not expected
 	// to occur in that scenario

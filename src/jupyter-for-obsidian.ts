@@ -23,12 +23,18 @@ export default class JupyterForObsidian extends Plugin {
 
 	/** Getter for the features to register for settings change events. */
 	get settingsProxy(): SettingsProxy<Settings> {
-		return this._settingsProxy!;
+		if (this._settingsProxy === null) {
+			throw new Error('Settings proxy not initialized. Call onload() first.');
+		}
+		return this._settingsProxy;
 	}
 
 	/** Getter for features to access and modify the settings. */
 	get settings(): Settings {
-		return this._settingsProxy!.settings;
+		if (this._settingsProxy === null) {
+			throw new Error('Settings proxy not initialized. Call onload() first.');
+		}
+		return this._settingsProxy.settings;
 	}
 
 	/**
