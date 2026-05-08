@@ -4,7 +4,7 @@ This error message indicates that Jupyter stopped and said it encountered an err
 
 1. Check that Jupyter is installed in the provided Python environment.
 
-    Depending on your [*Jupyter environment type*](./settings.md#jupyter-environment-type), you will want to check Jupyter Lab or Jupyter Notebook in particular.
+    Depending on your [*Jupyter environment type*](../../settings.md#jupyter-environment-type), you will want to check Jupyter Lab or Jupyter Notebook in particular.
 
     Use the following commands in your Python environment:
     
