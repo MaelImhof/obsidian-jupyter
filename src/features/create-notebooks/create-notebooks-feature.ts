@@ -26,7 +26,7 @@ import { JupyterAbstractPath } from '@/services/jupyter-path';
  * - By using a command in the command palette
  */
 export class CreateNotebooksFeature implements IFeature {
-	private plugin: JupyterForObsidian;
+	private plugin!: JupyterForObsidian;
 
 	/**
 	 * The ribbon icon used to create Jupyter notebooks.
@@ -105,6 +105,9 @@ export class CreateNotebooksFeature implements IFeature {
 			if (newVal) {
 				this.plugin.app.workspace.on('file-menu', this.onFileContextMenu);
 			} else {
+				// @ts-ignore Types seem to be wrong for the off method, but
+				// not for the on method. See the Obsidian documentation:
+				// https://docs.obsidian.md/Reference/TypeScript+API/Workspace/on('file-menu')
 				this.plugin.app.workspace.off('file-menu', this.onFileContextMenu);
 			}
 		});
@@ -215,6 +218,9 @@ export class CreateNotebooksFeature implements IFeature {
 	}
 
 	onunload(): void {
+		// @ts-ignore Types seem to be wrong for the off method, but
+		// not for the on method. See the Obsidian documentation:
+		// https://docs.obsidian.md/Reference/TypeScript+API/Workspace/on('file-menu')
 		this.plugin.app.workspace.off('file-menu', this.onFileContextMenu);
 		this.fileRibbonIcon?.remove();
 		this.fileRibbonIcon = null;

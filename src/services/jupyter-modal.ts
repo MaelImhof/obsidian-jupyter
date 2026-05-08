@@ -37,7 +37,7 @@ export class JupyterModal extends Modal {
 			if (typeof message === 'string') {
 				this.contentEl.createEl('p', { text: message });
 			} else {
-				let divContainer = this.contentEl.createDiv();
+				const divContainer = this.contentEl.createDiv();
 				divContainer.style.overflowX = 'scroll';
 				void MarkdownRenderer.render(
 					this.app,
@@ -49,7 +49,7 @@ export class JupyterModal extends Modal {
 			}
 		}
 		if (this.buttons.length > 0) {
-			let setting = new Setting(this.contentEl);
+			const setting = new Setting(this.contentEl);
 			this.buttons.forEach(
 				((button: JupyterModalButton) => {
 					setting.addButton(

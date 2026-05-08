@@ -68,7 +68,7 @@ export class EmbeddedJupyterView extends FileView {
 		this.messageTextEl.setText(text);
 
 		if (button !== null) {
-			let buttonEl = new ButtonComponent(this.messageContainerEl);
+			const buttonEl = new ButtonComponent(this.messageContainerEl);
 			buttonEl.setButtonText(button.text);
 			buttonEl.onClick(button.onClick.bind(this));
 		}
@@ -181,7 +181,7 @@ export class EmbeddedJupyterView extends FileView {
 		this.webviewEl.setAttribute('src', env.getFileUrl(this.openedFile.path) as string);
 		this.webviewEl.addEventListener(
 			'dom-ready',
-			((_event: any) => {
+			(() => {
 				this.messageContainerEl?.remove();
 				this.messageContainerEl = null;
 				this.messageHeaderEl?.remove();

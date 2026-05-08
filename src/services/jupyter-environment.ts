@@ -393,7 +393,7 @@ export class JupyterEnvironment {
 		// If not found yet, parse what Jupyter writes to the console to find
 		// the port and the token to authenticate with.
 		if (this.status == JupyterEnvironmentStatus.STARTING) {
-			const portRegex = new RegExp(`http:\/\/localhost:(\\d+)`);
+			const portRegex = new RegExp(`http://localhost:(\\d+)`);
 			const tokenRegex = new RegExp(`token=(\\w+)`);
 			const portMatch = data.match(portRegex);
 			const tokenMatch = data.match(tokenRegex);

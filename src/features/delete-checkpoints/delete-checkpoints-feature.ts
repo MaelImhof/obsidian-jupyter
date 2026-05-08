@@ -25,7 +25,7 @@ import { customJupyterConfigExists, generateJupyterConfig } from './jupyter-conf
  * after the Jupyter environment exits.
  */
 export class DeleteCheckpointsFeature implements IFeature {
-	private plugin: JupyterForObsidian;
+	private plugin!: JupyterForObsidian;
 
 	async onload(plugin: JupyterForObsidian): Promise<void> {
 		this.plugin = plugin;

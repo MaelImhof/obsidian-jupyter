@@ -39,7 +39,7 @@ describe('getVaultRootPath', () => {
 	});
 
 	it("adds '/' at the end if not present", () => {
-		let path = defaultPath.endsWith('/') ? defaultPath.slice(0, -1) : defaultPath;
+		const path = defaultPath.endsWith('/') ? defaultPath.slice(0, -1) : defaultPath;
 		expect(path.endsWith('/')).toBe(false);
 		mockVault = getVault(path);
 		const result = getVaultRootPath(mockVault);
@@ -56,12 +56,12 @@ describe('getVaultRootPath', () => {
 });
 
 describe('inVault', () => {
-	let mockVault = getVault();
-	let fileInside = 'somefile.md';
-	let pathInside = defaultPath + fileInside;
-	let pathOutside = '/bin/debug/';
-	let jupyterPathInside = new JupyterAbstractPath(pathInside, fileInside, false, true);
-	let jupyterPathOutside = new JupyterAbstractPath('/bin/debug/', null, true, false);
+	const mockVault = getVault();
+	const fileInside = 'somefile.md';
+	const pathInside = defaultPath + fileInside;
+	const pathOutside = '/bin/debug/';
+	const jupyterPathInside = new JupyterAbstractPath(pathInside, fileInside, false, true);
+	const jupyterPathOutside = new JupyterAbstractPath('/bin/debug/', null, true, false);
 
 	it('accepts string path in the vault when root is provided', () => {
 		expect(inVault(pathInside, mockVault, defaultPath)).toBe(true);
@@ -96,7 +96,7 @@ describe('inVault', () => {
 	});
 
 	it("accepts root directory without a '/' at the end", () => {
-		let rootStripped = defaultPath.slice(0, -1);
+		const rootStripped = defaultPath.slice(0, -1);
 		expect(rootStripped.endsWith('/')).toBe(false);
 		expect(inVault(rootStripped, mockVault, null)).toBe(true);
 	});

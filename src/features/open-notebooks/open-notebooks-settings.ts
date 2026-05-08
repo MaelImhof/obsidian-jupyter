@@ -121,8 +121,10 @@ export function registerOpenNotebookSettingsUI(tab: JupyterSettingsTab): void {
 						.addOption(PythonExecutableType.PYTHON3, '`python3` command')
 						.addOption(PythonExecutableType.PATH, 'Specified executable path')
 						.setValue(plugin.settings.pythonExecutable)
-						.onChange((value: PythonExecutableType) => {
-							plugin.settings.pythonExecutable = value;
+						.onChange((value: string) => {
+							// We assume that the value is always valid since
+							// it can only be set through dropdown options.
+							plugin.settings.pythonExecutable = value as PythonExecutableType;
 						});
 				});
 		}
@@ -202,8 +204,10 @@ export function registerOpenNotebookSettingsUI(tab: JupyterSettingsTab): void {
 						.addOption(JupyterEnvironmentType.LAB, 'Jupyter Lab')
 						.addOption(JupyterEnvironmentType.NOTEBOOK, 'Jupyter Notebook')
 						.setValue(plugin.settings.jupyterEnvType)
-						.onChange((value: JupyterEnvironmentType) => {
-							plugin.settings.jupyterEnvType = value;
+						.onChange((value: string) => {
+							// We assume that the value is always valid since
+							// it can only be set through dropdown options.
+							plugin.settings.jupyterEnvType = value as JupyterEnvironmentType;
 
 							if (plugin.env.getStatus() !== JupyterEnvironmentStatus.EXITED) {
 								new JupyterRestartModal(plugin, 'Jupyter environment type').open();
