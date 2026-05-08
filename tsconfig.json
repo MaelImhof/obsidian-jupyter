@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "types": [
       "vitest/globals",
       "@wdio/globals/types",
@@ -9,16 +8,16 @@
     ],
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
     },
     "inlineSourceMap": true,
     "inlineSources": true,
-    "module": "ESNext",
+    "module": "nodenext",
     "target": "ES6",
     "allowJs": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,

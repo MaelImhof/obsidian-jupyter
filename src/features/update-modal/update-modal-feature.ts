@@ -8,7 +8,7 @@ import { UpdateModal } from './jupyter-update-modal';
  * is updated with the changes made in the new version.
  */
 export class UpdateModalFeature implements IFeature {
-	private plugin: JupyterForObsidian;
+	private plugin!: JupyterForObsidian;
 
 	async onload(plugin: JupyterForObsidian): Promise<void> {
 		this.plugin = plugin;

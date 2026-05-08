@@ -26,13 +26,12 @@ type Flatten<T> = {
 /**
  * Regroups all settings from all features into a single type.
  */
-export interface Settings
-	extends Flatten<
-		OpenNotebooksSettings &
-			CreateNotebooksSettings &
-			UpdateModalSettings &
-			DeleteCheckpointsSettings
-	> {}
+export type Settings = Flatten<
+	OpenNotebooksSettings &
+		CreateNotebooksSettings &
+		UpdateModalSettings &
+		DeleteCheckpointsSettings
+>;
 
 /**
  * Regroups all default setting values from all features into a
@@ -111,20 +110,20 @@ export class SettingsProxy<T extends Record<string, any>> extends EventEmitter {
 		eventName: K,
 		listener: ListenerForEvent<T, K>
 	): this {
-		return super.on(eventName, listener as any);
+		return super.on(eventName, listener);
 	}
 
 	override off<K extends SettingChangeEvent<T>>(
 		eventName: K,
 		listener: ListenerForEvent<T, K>
 	): this {
-		return super.off(eventName, listener as any);
+		return super.off(eventName, listener);
 	}
 
 	override once<K extends SettingChangeEvent<T>>(
 		eventName: K,
 		listener: ListenerForEvent<T, K>
 	): this {
-		return super.once(eventName, listener as any);
+		return super.once(eventName, listener);
 	}
 }
