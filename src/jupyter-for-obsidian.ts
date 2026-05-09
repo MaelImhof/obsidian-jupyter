@@ -7,6 +7,7 @@ import { JupyterEnvironment, PythonExecutableType } from '@/services/jupyter-env
 import { CreateNotebooksFeature } from './features/create-notebooks/create-notebooks-feature';
 import { UpdateModalFeature } from './features/update-modal/update-modal-feature';
 import { DeleteCheckpointsFeature } from './features/delete-checkpoints/delete-checkpoints-feature';
+import { EmbedNotebooksFeature } from './features/embed-notebooks/embed-notebooks-feature';
 
 /**
  * Main class for the Obsidian plugin that integrates Jupyter functionality.
@@ -82,7 +83,8 @@ export default class JupyterForObsidian extends Plugin {
 			new OpenNotebooksFeature(),
 			new CreateNotebooksFeature(),
 			new UpdateModalFeature(),
-			new DeleteCheckpointsFeature()
+			new DeleteCheckpointsFeature(),
+			new EmbedNotebooksFeature()
 		);
 
 		// Register the settings UI for the plugin

@@ -28,3 +28,15 @@ If your plugin does not need CSS, delete this file.
 .jupyter-webview-loading {
 	display: none;
 }
+
+.jupyter-embed-container {
+	padding: 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+	margin: 8px 0;
+}
+
+.jupyter-embed-content .jupyter-webview {
+	height: 500px;
+}
