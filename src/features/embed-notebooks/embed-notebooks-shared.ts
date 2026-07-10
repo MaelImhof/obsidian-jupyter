@@ -25,23 +25,6 @@ export const EMBED_HAS_WEBVIEW_CLASS = 'jupyter-embed-has-webview';
 export class NotebookEmbedChild extends MarkdownRenderChild {
 	private changeEventListener: (env: JupyterEnvironment) => void = this.render.bind(this);
 
-	/**
-	 * Pre-created content containers for each Jupyter environment state.
-	 *
-	 * Created once in onload() and toggled via display:none on each
-	 * render() call. Avoids DOM mutations (appendChild/removeChild)
-	 * inside the CodeMirror content area, which would be detected by CM6
-	 * as source content changes and written back to the file.
-	 */
-	private titleEl!: HTMLElement;
-	private contentEl!: HTMLElement;
-	private exitedEl!: HTMLElement;
-	private startingEl!: HTMLElement;
-	private runningEl!: HTMLElement;
-	private webviewEl!: HTMLElement;
-
-	private initialized = false;
-
 	constructor(
 		containerEl: HTMLElement,
 		private plugin: JupyterForObsidian,
@@ -51,7 +34,12 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 	}
 
 	onload() {
-		this.initContent();
+		// Without this, clicks inside the embed (e.g. the "Start Jupyter"
+		// button, or the webview itself) fall through to CodeMirror and
+		// move the cursor instead.
+		this.containerEl.addEventListener('mousedown', (e) => e.stopPropagation());
+		this.containerEl.addEventListener('click', (e) => e.stopPropagation());
+
 		this.plugin.env.on(JupyterEnvironmentEvent.CHANGE, this.changeEventListener);
 		this.render();
 	}
@@ -61,89 +49,99 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 	}
 
 	/**
-	 * Creates all content elements once. Individual state panels are
-	 * hidden by default and toggled by render().
+	 * Rebuilds the embed content from scratch based on the current Jupyter
+	 * environment status.
+	 *
+	 * Only runs on `JupyterEnvironmentEvent.CHANGE` (the server starting or
+	 * stopping) plus once on load. A rare, user-triggered event, not
+	 * something tied to typing or scrolling. `containerEl` here is a plain
+	 * `div` this class owns. In live preview, it is nested inside Obsidian's
+	 * own `.internal-embed` widget, but Obsidian only tracks that outer
+	 * node's presence, not this container's interior, so rebuilding it on
+	 * every render is safe.
 	 */
-	private initContent(): void {
-		if (this.initialized) return;
-		this.initialized = true;
+	private render() {
+		this.containerEl.empty();
 
-		this.containerEl.addEventListener('mousedown', (e) => e.stopPropagation());
-		this.containerEl.addEventListener('click', (e) => e.stopPropagation());
+		const status = this.plugin.env.getStatus();
+		const showTitle = status !== JupyterEnvironmentStatus.RUNNING;
 
-		this.titleEl = this.containerEl.createEl('div');
-		this.titleEl.addClass('embed-title', 'markdown-embed-title');
-		this.titleEl.innerText = this.file.name;
+		if (showTitle) {
+			const title = this.containerEl.createEl('div');
+			title.addClass('embed-title', 'markdown-embed-title');
+			title.innerText = this.file.name;
+		}
 
-		this.contentEl = this.containerEl.createEl('div');
-		this.contentEl.addClass(EMBED_CONTENT_CLASS);
+		const content = this.containerEl.createEl('div');
+		content.addClass(EMBED_CONTENT_CLASS);
 
-		// Starting state
-		this.startingEl = this.contentEl.createEl('div');
-		const startingHeader = this.startingEl.createEl('h4');
-		startingHeader.addClass('jupyter-embed-message-header');
-		startingHeader.setText('Jupyter is starting');
-		const startingText = this.startingEl.createEl('p');
-		startingText.addClass('jupyter-embed-message-text');
-		startingText.setText(
-			'The Jupyter server is starting. The notebook will be displayed shortly.'
-		);
-
-		// Exited state
-		this.exitedEl = this.contentEl.createEl('div');
-		const exitedHeader = this.exitedEl.createEl('h4');
-		exitedHeader.addClass('jupyter-embed-message-header');
-		exitedHeader.setText('Jupyter is not running');
-		const exitedText = this.exitedEl.createEl('p');
-		exitedText.addClass('jupyter-embed-message-text');
-		exitedText.setText(
-			'The Jupyter server is not running. Start the server to view this notebook.'
-		);
-		const startButton = new ButtonComponent(this.exitedEl);
-		startButton.setButtonText('Start Jupyter');
-		startButton.onClick(() => {
-			this.plugin.env.start();
-		});
-
-		// Running state
-		this.runningEl = this.contentEl.createEl('div');
-		this.runningEl.addClass(EMBED_HAS_WEBVIEW_CLASS);
-		// @ts-ignore — "webview" is an Electron element, not a standard HTML tag
-		this.webviewEl = this.runningEl.createEl('webview');
-		this.webviewEl.setAttribute('allowpopups', '');
-		// @ts-ignore — appId is a property injected by the Surfing plugin
-		this.webviewEl.setAttribute('partition', 'persist:surfing-vault-' + this.plugin.app.appId);
-		this.webviewEl.addClass('jupyter-webview');
-		this.webviewEl.style.height = this.plugin.settings.embedHeight + 'px';
+		switch (status) {
+			case JupyterEnvironmentStatus.RUNNING:
+				content.addClass(EMBED_HAS_WEBVIEW_CLASS);
+				this.renderWebview(content);
+				break;
+			case JupyterEnvironmentStatus.STARTING:
+				this.renderMessage(
+					content,
+					'Jupyter is starting',
+					'The Jupyter server is starting. The notebook will be displayed shortly.'
+				);
+				break;
+			case JupyterEnvironmentStatus.EXITED:
+				this.renderMessage(
+					content,
+					'Jupyter is not running',
+					'The Jupyter server is not running. Start the server to view this notebook.',
+					{
+						text: 'Start Jupyter',
+						onClick: () => {
+							this.plugin.env.start();
+						}
+					}
+				);
+				break;
+		}
 	}
 
 	/**
-	 * Shows or hides content panels based on the current Jupyter state.
-	 *
-	 * Only toggles pre-existing elements via display:none — never adds
-	 * or removes DOM nodes. This prevents CodeMirror from interpreting
-	 * structural DOM changes as edits to the source document.
-	 *
-	 * The webview `src` is set here (not in initContent) so that
-	 * getFileUrl is only called when Jupyter is actually running —
-	 * it returns null if the server isn't ready yet.
-	 *
-	 * TODO: Would it be better to simply add/remove elements? After the latest debugging steps, not sure the DOM mutations were actually the cause of the CM6 issues.
+	 * Renders the webview loading the notebook from the running Jupyter
+	 * server. Only called when the environment is RUNNING, since
+	 * `getFileUrl` returns null otherwise.
 	 */
-	private render() {
-		const status = this.plugin.env.getStatus();
+	private renderWebview(container: HTMLElement): void {
+		// @ts-ignore — "webview" is an Electron element, not a standard HTML tag
+		const webview = container.createEl('webview');
+		webview.setAttribute('allowpopups', '');
+		// @ts-ignore — appId is a property injected by the Surfing plugin
+		webview.setAttribute('partition', 'persist:surfing-vault-' + this.plugin.app.appId);
+		webview.addClass('jupyter-webview');
+		webview.style.height = this.plugin.settings.embedHeight + 'px';
+		webview.setAttribute('src', this.plugin.env.getFileUrl(this.file.path) as string);
+	}
 
-		this.titleEl.toggle(status !== JupyterEnvironmentStatus.RUNNING);
-		this.startingEl.toggle(status === JupyterEnvironmentStatus.STARTING);
-		this.exitedEl.toggle(status === JupyterEnvironmentStatus.EXITED);
-
-		const isRunning = status === JupyterEnvironmentStatus.RUNNING;
-		this.runningEl.toggle(isRunning);
-		if (isRunning) {
-			this.webviewEl.setAttribute(
-				'src',
-				this.plugin.env.getFileUrl(this.file.path) as string
-			);
+	/**
+	 * Renders a status message inside the embed, with an optional action button.
+	 *
+	 * Used for two states:
+	 *   - Jupyter is starting -> informational message, no button needed
+	 *   - Jupyter has exited -> message + "Start Jupyter" button
+	 */
+	private renderMessage(
+		container: HTMLElement,
+		header: string,
+		text: string,
+		action?: { text: string; onClick: () => void }
+	): void {
+		const headerEl = container.createEl('h4');
+		headerEl.addClass('jupyter-embed-message-header');
+		headerEl.setText(header);
+		const textEl = container.createEl('p');
+		textEl.addClass('jupyter-embed-message-text');
+		textEl.setText(text);
+		if (action) {
+			const button = new ButtonComponent(container);
+			button.setButtonText(action.text);
+			button.onClick(action.onClick);
 		}
 	}
 }
