@@ -1,10 +1,11 @@
-import { ButtonComponent, MarkdownRenderChild, TFile } from 'obsidian';
+import { MarkdownRenderChild, TFile } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 import {
 	JupyterEnvironment,
 	JupyterEnvironmentEvent,
 	JupyterEnvironmentStatus
 } from '@/services/jupyter-environment';
+import { renderJupyterMessage } from '@/services/jupyter-message';
 
 export const EMBED_CONTAINER_CLASS = 'jupyter-embed-container';
 export const EMBED_CONTENT_CLASS = 'jupyter-embed-content';
@@ -81,15 +82,17 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 				this.renderWebview(content);
 				break;
 			case JupyterEnvironmentStatus.STARTING:
-				this.renderMessage(
+				renderJupyterMessage(
 					content,
+					'h4',
 					'Jupyter is starting',
 					'The Jupyter server is starting. The notebook will be displayed shortly.'
 				);
 				break;
 			case JupyterEnvironmentStatus.EXITED:
-				this.renderMessage(
+				renderJupyterMessage(
 					content,
+					'h4',
 					'Jupyter is not running',
 					'The Jupyter server is not running. Start the server to view this notebook.',
 					{
@@ -117,31 +120,5 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 		webview.addClass('jupyter-webview');
 		webview.style.height = this.plugin.settings.embedHeight + 'px';
 		webview.setAttribute('src', this.plugin.env.getFileUrl(this.file.path) as string);
-	}
-
-	/**
-	 * Renders a status message inside the embed, with an optional action button.
-	 *
-	 * Used for two states:
-	 *   - Jupyter is starting -> informational message, no button needed
-	 *   - Jupyter has exited -> message + "Start Jupyter" button
-	 */
-	private renderMessage(
-		container: HTMLElement,
-		header: string,
-		text: string,
-		action?: { text: string; onClick: () => void }
-	): void {
-		const headerEl = container.createEl('h4');
-		headerEl.addClass('jupyter-embed-message-header');
-		headerEl.setText(header);
-		const textEl = container.createEl('p');
-		textEl.addClass('jupyter-embed-message-text');
-		textEl.setText(text);
-		if (action) {
-			const button = new ButtonComponent(container);
-			button.setButtonText(action.text);
-			button.onClick(action.onClick);
-		}
 	}
 }
