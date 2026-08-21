@@ -1,551 +1,455 @@
 # Embed View Support
 
-::: warning
-This page is written with AI for now, to keep track of the steps I took
-during the journey of implementing embeds. I intend to rewrite this
-documentation once the implementation is clean, so that it is more useful
-than the brain dump it currently is.
-:::
-
-The *Jupyter for Obsidian* plugin supports embedding Jupyter notebooks in
-other Obsidian notes — in reading mode, live preview mode, and as hover
-previews (in-note links and the file explorer) — using the
-[Obsidian feature to embed files in notes](https://obsidian.md/help/embeds).
+*Jupyter for Obsidian* lets you embed a Jupyter notebook inside another note
+with the same `![[file]]` syntax Obsidian uses for images, PDFs, or other
+notes. See also the [Obsidian docs on embedding files](https://obsidian.md/help/embeds).
 
 ![Screenshot of an Embed View in read mode](/images/embed-view.png)
 
-Implementing embed view support was not trivial, because the documentation
-for that part of the Obsidian API, as far as I could tell, is very sparse. I
-had to "reverse-engineer" the functionality implemented in the
-[Obsidian Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
-to understand what needed to be done.
+Obsidian's embed API is not documented for arbitrary file types, so most of
+what follows was worked out by instrumenting Obsidian itself (adding
+temporary logging, inspecting the live DOM) rather than from any official
+reference. This page describes what was found and why the implementation
+ended up shaped the way it is, mainly so a future change to this feature
+doesn't have to re-derive it from scratch.
 
-I'm documenting my conclusions and the implementation details here, in case I
-need to revisit this in the future, or if anyone else is interested in
-implementing embed view support for their own plugin.
+## The three ways an embed can appear
 
-::: info
-Note that since I had to reverse-engineer the functionality, there may be
-some details that I missed or misunderstood, and the implementation may not
-be perfect. If you have any suggestions for improvements, please let me know!
-:::
+Obsidian can show the contents of an embedded file in three different UI
+contexts, and each one renders the embed through different internal
+machinery:
 
-## Embed API
+- **Reading mode** — the note is displayed as static, rendered HTML. The
+  embed appears inline, in place of the `![[file]]` syntax.
+- **Live Preview** — the note is open for editing, with formatting rendered
+  inline (Obsidian's default editing experience, built on CodeMirror 6).
+  The embed appears inline here too, but through a different code path than
+  reading mode.
+- **Hover preview** — hovering a `[[link]]` (holding Ctrl/Cmd where
+  required) shows a temporary popover with a preview of the linked file,
+  without navigating to it.
 
-### What is an embed?
+A notebook embedded via any of these can itself be in one of three states,
+depending on whether the Jupyter server is running, like normal Jupyter
+views: **starting**, **not running** (with a button to start it), or
+**running** (showing the actual notebook in a `<webview>`). This states
+machinery is shared across all three contexts (see
+[`NotebookEmbedChild`](#notebookembedchild)).
 
-An "embed" in Obsidian is a way to display the content of a file in a context
-that is not the file's tab.
+## The core problem: `.ipynb` is not markdown
 
-The most common way to use embeds is in another note using the `![[file]]`
-syntax. This is similar to how images are embedded with `![[image.png]]`, but
-for any file type. Another common use case is hovering over a `[[link]]`,
-which shows a popover preview of the file's content.
+Every other piece of this feature follows from one fact: **`.ipynb` files
+are JSON, not markdown**, and Obsidian's main extensibility hook for
+embeds
+([`registerMarkdownPostProcessor()`](https://docs.obsidian.md/Reference/TypeScript+API/Plugin/registerMarkdownPostProcessor))
+only ever fires as part of rendering *markdown* content.
 
-Obsidian handles common formats natively (images, PDFs, audio, video, notes),
-and plugins can extend this to custom file types, though there are some
-differences according to what I found.
+This was confirmed empirically, by testing two different things separately.
+Logging was added inside the post-processor callback and around the
+`hover-link` workspace event, then:
 
-There are three distinct contexts where an embed can appear:
+- A `.ipynb` **embed** (`![[file.ipynb]]`) was checked in both reading mode
+  and Live Preview.
+- A `.ipynb` **hover popover** was checked from each of the three surfaces
+  a hover can come from: a link hovered while reading a note, a link
+  hovered in Live Preview, and a file explorer item.
 
-- **Reading mode**: the containing note is displayed as rendered HTML,
-  read-only mode. Simplest case to handle.
-- **Live Preview mode**: the containing note is being edited with rendered
-  preview (Obsidian's default editing experience). This is probably the most
-  commonly used context, but also a more complex one to handle.
-- **Hover preview**: the user hovers over a `[[link]]` and Obsidian shows a
-  temporary popover.
+Results: a `.md` embed or hover popover reliably triggers the
+post-processor everywhere, rendering the target note's actual content. A
+`.ipynb` embed triggers it in reading mode (that's the mechanism the
+reading mode implementation relies on, see below) but never in Live
+Preview. A `.ipynb` hover popover never triggers it, regardless of which of
+the three surfaces it was hovered from (including a link hovered while
+the note is in reading mode, which is easy to conflate with the embed case
+above, but is a different code path).
 
-Note that the file extension seems to matter. For example, implementing
-embeds for a format stored in `.md` documents (a native Obsidian format) is
-not the same as implementing embeds for `.ipynb` (a format Obsidian does not
-support natively). More on this in live preview details.
-
-### Reading mode
-
-This is the simplest case. The markdown post-processor receives the rendered
-HTML, and `.internal-embed` elements are already present. The general pattern
-for handling embeds in reading mode is:
-
-1. Inside the post-processor callback, query `element.querySelectorAll('.internal-embed')`.
-2. Check the `src` attribute for your file extension.
-3. Resolve the file via `metadataCache.getFirstLinkpathDest()`.
-4. Replace the `.internal-embed` with your custom content.
-5. If the content needs event subscriptions or other lifecycle management,
-   create a `MarkdownRenderChild` and register it with `context.addChild()`.
-
-#### How embeds appear in the DOM
-
-In **reading mode**, Obsidian's markdown renderer converts `![[file]]` syntax
-into a `<div>` with the class `.internal-embed`.
-The `src` attribute contains the filename:
-
-| User writes | HTML element | `src` attribute |
-|---|---|---|
-| `![[file.ipynb]]` | `<div class="internal-embed" src="file.ipynb">` | `file.ipynb` |
-| `![[folder/file.ipynb]]` | `<div class="internal-embed" src="folder/file.ipynb">` | `folder/file.ipynb` |
-| `![[file.ipynb#section]]` | `<div class="internal-embed" src="file.ipynb#section">` | `file.ipynb#section` |
-
-The `src` value is relative to the current note's path, or it can be a wiki
-link. To resolve it to a `TFile`, use
-`metadataCache.getFirstLinkpathDest(src, ctx.sourcePath)`.
-
-#### The `registerMarkdownPostProcessor()` API
-
-This is the primary hook for intercepting embeds in reading mode. It's a method
-on the `Plugin` class:
-
-```ts
-plugin.registerMarkdownPostProcessor(
-  (element: HTMLElement, context: MarkdownPostProcessorContext) => {
-    // element is a section of the rendered note (paragraph, block, etc.)
-    // context contains sourcePath, frontmatter, addChild(), etc.
-  }
-);
-```
-
-Obsidian calls this callback for each section of the rendered note. Inside the
-callback you can query the DOM, create new elements, and register lifecycle
-components. The post-processor is automatically cleaned up when the plugin
-unloads.
-
-#### The `MarkdownRenderChild` lifecycle
-
-`MarkdownRenderChild` is a base class for components that live inside a
-rendered markdown section. It provides:
-
-- **`onload()`**: called when the child is added to the render context. Use it
-  to subscribe to events, start intervals, etc.
-- **`onunload()`**: called when the parent section is removed from the DOM. Use
-  it to clean up subscriptions and prevent memory leaks.
-
-Register a child with `context.addChild(child)` so Obsidian manages its
-lifecycle automatically.
-
-### Live Preview mode
-
-My first assumption, based on reading the Excalidraw plugin's source, was
-that Live Preview has no `.internal-embed` elements in the DOM at all, and
-that the fix was to read `context.containerEl` — a private property on
-`MarkdownPostProcessorContext` (accessed via `//@ts-ignore`) — and walk up
-the DOM tree looking for wrapping elements like `.cm-embed-block` or
-`.cm-preview-code-block`.
-
-That assumption turned out to be wrong for `.ipynb`. I confirmed empirically
-(by logging inside the post-processor callback and inspecting the live
-DOM) that:
-
-- Obsidian **does** create a `.internal-embed` element for `.ipynb` in Live
-  Preview — its default fallback for a file type it doesn't natively
-  recognize, rendered as
-  `<div class="internal-embed file-embed mod-generic" src="...">`.
-- `registerMarkdownPostProcessor()` is **never called** on it. Not once,
-  not for any section of the note — not just for the embed.
-
-The reason turned out to be about file type, not rendering mode.
-`.internal-embed` placeholders always appear in the DOM in reading mode
-because `MarkdownRenderer` renders the *entire* note, section by section,
-before post-processors run over each section — this happens unconditionally,
-regardless of what a section contains. A `.ipynb` file is JSON, not
-markdown, so there is no equivalent unconditional pass in Live Preview:
-Obsidian's fallback "unrecognized file" embed widget is built by an
-internal, native CM6 extension that has no reason to invoke
-`registerMarkdownPostProcessor`, since there's no markdown content to
-render.
-
-This explains why the Excalidraw approach works for Excalidraw, and why it
-doesn't transfer directly to `.ipynb`. Excalidraw's primary file format is
-an ordinary `.md` file with a JSON payload in a code fence — genuinely
-markdown, so `MarkdownRenderer` recursively renders its embedded content
-in *both* modes, invoking post-processors either way. The `ctx.containerEl`
-walk is there to let the same post-processor callback detect *when* it's
-running inside a Live Preview embed wrapper (to swap the rendered code
-fence for an image), not to discover the embed in the first place.
-
-Tellingly, Excalidraw also supports a non-markdown "legacy" raw
-`.excalidraw` file format (plain JSON, no `.md` wrapper) — the same
-situation `.ipynb` is in. It has **no Live Preview embed support for that
-format**. From the plugin's own 1.4.9 release notes: *"A bridging solution
-to support Obsidian 0.13.2 WYSIWYG until markdownPostProcessor is
-implemented natively. This only works for Excalidraw.md files. Sadly I
-can't offer a solution for legacy .excalidraw files."* Its only
-`MutationObserver` usage in the whole codebase is unrelated to Live
-Preview — it's a narrow fallback that watches for hover-preview popovers
-on old Obsidian versions.
-
-Since `.ipynb` can't be represented as markdown without breaking
-compatibility with the wider Jupyter ecosystem (the whole point of this
-plugin), there's no post-processor hook available for Live Preview embeds.
-The only way to hook in is a `MutationObserver` watching for the native
-`.internal-embed[src$=".ipynb"]` placeholder to appear, then modifying its
-*interior*.
-
-#### Why the `.internal-embed` element itself can't be replaced
-
-Early on, replacing the `.internal-embed` node outright (the same
-`replaceChild` approach reading mode uses) caused Live Preview to break.
-The reason: in Live Preview, that specific DOM node isn't just inert
-markup — it's a widget Obsidian's own CM6 extension owns and tracks
-internally. Swapping it for a new node breaks Obsidian's bookkeeping for
-that widget.
-
-The fix is to **keep the `.internal-embed` element in place** and insert a
-container we fully own as a child of it, then only ever mutate inside that
-container. Obsidian only tracks the outer node's *presence*, not its
-inner content, so this is safe.
-
-### Hover preview
-
-Same starting assumption as Live Preview: based on the Excalidraw plugin's
-handling of its own non-markdown "legacy" file format, I expected to need
-`app.workspace.on('hover-link', ...)` plus a `MutationObserver` watching for
-`.popover.hover-popover` elements. I confirmed this empirically this time
-before writing any implementation, by logging both the `hover-link` event
-and the post-processor callback across three different hover contexts.
-
-#### `hover-link` fires from multiple surfaces, distinguished by `source`
-
-| Surface | `source` | Trigger | `targetEl` |
-|---|---|---|---|
-| Reading mode, in-note link | `'preview'` | Hover only | `a.internal-link` |
-| Live Preview, in-note link | `'editor'` | Ctrl/Cmd + hover | `span.cm-hmd-internal-link` |
-| File explorer | `'file-explorer'` | Ctrl/Cmd + hover for a popover; the event itself still fires on plain hover | `div.tree-item-self...` |
-
-The event also carries `hoverParent` and `targetEl`, beyond the
-`linktext`/`sourcePath` the original assumption was based on. `sourcePath`
-was present for in-note links but absent for the file explorer case — there
-`linktext` is already an absolute vault path (e.g. `'Notebook
-creation/Invalid notebook.ipynb'`), so there's no source note to resolve it
-against.
-
-#### The post-processor never fires for `.ipynb`, in any of the three contexts
-
-For `.md` links, the post-processor fires 2-4 times while the popover is
-built, rendering the target note's content — the same "post-processors run
-per rendered section" behavior already seen for reading-mode embeds. For
-`.ipynb` links, across all three contexts (reading mode, Live Preview, file
-explorer), it fires **zero times**. Same file-type-driven cause as Live
-Preview embeds: `.ipynb` is JSON, not markdown, so there's no
-`MarkdownRenderer` pass to hook into, regardless of how the popover was
-triggered.
-
-#### The default `.ipynb` popover DOM
+The reason is about content type, not about which of the three contexts is
+active. Reading mode renders an entire note through `MarkdownRenderer`,
+section by section, and calls every registered post-processor on each
+section, unconditionally, regardless of what that section contains. That's
+why a `.ipynb` embed placeholder still gets a chance to be intercepted in
+reading mode: it's swept up by a pass that was going to happen anyway. Live
+Preview and hover preview have no equivalent unconditional pass. When
+either needs to show an embed for a file type it doesn't recognize, it
+builds a generic placeholder:
 
 ```html
-<div class="popover hover-popover" style="...">
-  <div class="file-embed mod-generic is-loaded">
+<!-- In Live Preview -->
+<div class="internal-embed file-embed mod-generic">
+
+<!-- In Hover Preview -->
+<div class="popover hover-popover">
+```
+
+through an internal code path that has no reason to invoke
+`MarkdownRenderer`, since there is no markdown to render.
+
+Practically, this means:
+
+- **Reading mode** can use the standard post-processor pattern.
+- **Live Preview** and **hover preview** cannot. The best solution that was
+  found is to use a `MutationObserver` watching for the placeholder to
+  appear, and DOM inspection is the only source of truth for what to render,
+  correlated with contextual information (the target file, the source note)
+  that can't come from a `MarkdownPostProcessorContext` that never gets
+  created.
+
+::: info Why not do what other plugins do?
+The [Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin)
+was checked as a possible reference while implementing the feature. Its
+embeds work in Live Preview and hover preview, but only because its primary
+file format is an ordinary `.md` file with a JSON payload in a code fence,
+which *is* markdown, so `MarkdownRenderer` recursively renders it in every
+context. Tellingly, Excalidraw also supports a non-markdown "legacy" raw
+`.excalidraw` format (plain JSON, same situation `.ipynb` is in), and its
+own release notes say plainly it has no Live Preview support for that
+format either: *"Sadly I can't offer a solution for legacy .excalidraw
+files."*
+:::
+
+## Reading mode
+
+Obsidian's markdown renderer converts
+
+```md
+![[file.ipynb]]
+```
+
+into a
+
+```html
+<div class="internal-embed" src="file.ipynb">
+```
+
+inside the rendered section. The `src` attribute carries the link target,
+as written in the original embed link (the value is a wikilink):
+
+| User writes | `src` attribute |
+|---|---|
+| `![[file.ipynb]]` | `file.ipynb` |
+| `![[folder/file.ipynb]]` | `folder/file.ipynb` |
+| `![[file.ipynb#section]]` | `file.ipynb#section` |
+
+### Implementation
+
+`EmbedNotebooksFeature` (`embed-notebooks-feature.ts`) registers a single
+markdown post-processor via `registerMarkdownPostProcessor()`. Its callback,
+`processReadingMode()`:
+
+1. Queries the rendered section for `.internal-embed` elements.
+2. Filters to ones whose `src` (stripped of any `#section` suffix) ends in
+   `.ipynb`.
+3. Resolves the link to a `TFile` via
+   [`metadataCache.getFirstLinkpathDest(src, ctx.sourcePath)`](https://docs.obsidian.md/Reference/TypeScript+API/MetadataCache/getFirstLinkpathDest).
+4. Replaces the `.internal-embed` element outright with a container `div`,
+   and mounts a [`NotebookEmbedChild`](#notebookembedchild)
+   into it, registered via `ctx.addChild()` so Obsidian manages its
+   lifecycle (calling `onunload()` when the section leaves the DOM).
+
+This is the simplest of the three contexts: the DOM is static once
+rendered, there's no live editor to conflict with, and `ctx` gives a
+correct `sourcePath` and a lifecycle hook for free.
+
+## Live Preview
+
+### How the embed appears
+
+Obsidian still shows *something* for `![[file.ipynb]]` in Live Preview,
+just not through a mechanism the post-processor can see. Before this
+feature touches anything, it's a generic fallback placeholder:
+
+```html
+<div class="internal-embed file-embed mod-generic" src="file.ipynb">
+  <!-- Obsidian's own placeholder content -->
+</div>
+```
+
+### Why the outer element can't be replaced
+
+Early in development, replacing this `.internal-embed` node outright (the
+same `replaceChild` approach reading mode uses) broke Live Preview. The
+node isn't inert markup here. Obsidian's own Live Preview extension owns
+and tracks it as a live widget. Swapping it for a different node breaks
+that extension's internal bookkeeping for the widget.
+
+The fix: **leave the `.internal-embed` element in place**, and insert a
+container the plugin fully owns as its child, mutating only inside that
+container. Obsidian's extension tracks the outer node's *presence*, not its
+contents, so this is safe, and it's the same reason
+[`NotebookEmbedChild`](#notebookembedchild) can
+freely empty and rebuild its own container on every render without issue.
+
+### Implementation
+
+`setupLivePreview()` (`embed-notebooks-live-preview.ts`) sets up a
+`MutationObserver` per open window (see
+[Popout windows](#popout-windows) below) that:
+
+- **Detects embeds**: watches for `.internal-embed` elements whose `src`
+  ends in `.ipynb` being added to the DOM. A `data-jupyter-embed-processed`
+  attribute marks ones already handled. To keep this cheap during typing
+  (CM6 creates and destroys many small decoration nodes as a side effect of
+  normal editing, all of which pass through the observer's callback), leaf
+  nodes with `childElementCount === 0` are skipped before doing any subtree
+  query, since they can't contain a nested embed.
+- **Resolves the source note**: a `MutationObserver` callback has no
+  `MarkdownPostProcessorContext`, so there's no `ctx.sourcePath` to resolve
+  a relative link against. `resolveSourcePath()` instead searches every
+  open `markdown`-type leaf (`workspace.getLeavesOfType('markdown')`) for
+  one whose `containerEl` contains the embed node, and uses that leaf's
+  file. This is public, documented Obsidian API. If no leaf matches, it
+  falls back to `workspace.getActiveFile()` (see
+  [Known limitations](#known-limitations)).
+- **Builds the embed**: empties the `.internal-embed` element's interior,
+  applies inline styles to strip Obsidian's own placeholder chrome
+  (padding, border, background), inserts an owned container `div`, and
+  mounts a `NotebookEmbedChild` into it directly (calling `.onload()`
+  itself, since there's no `ctx.addChild()` to do it here).
+- **Cleans up**: each window's embeds are tracked in a
+  `Map<HTMLElement, NotebookEmbedChild>`, scoped to that window (see
+  [Popout windows](#popout-windows)). When a tracked container (or an
+  ancestor of one) is removed from the DOM (e.g. scrolled out of view, or
+  its section re-rendered), the corresponding child's `onunload()` runs and
+  it's dropped from the map.
+
+### Popout windows
+
+The observer above is attached once per open window via
+[`forEachWorkspaceWindow()`](#foreachworkspacewindow), not just to the main
+one. For the main window it watches `app.workspace.containerEl`. That element includes the whole leaf/pane layout, but is narrower than `document.body` so
+it doesn't fire for churn in modals, the command palette, or other
+non-workspace UI. There's no public equivalent to `containerEl` for a popout
+`WorkspaceWindow`, so popouts fall back to that window's `document.body`
+instead. It is a broader scope, though in practice popouts tend to have
+little non-workspace UI chrome to generate false-positive churn from.
+
+Each window also gets its own tracked-embeds map rather than sharing one
+globally, so that when a specific window closes, exactly its embeds get
+unloaded (see [`forEachWorkspaceWindow()`](#foreachworkspacewindow) for
+why this can't be left to the `MutationObserver` to notice on its own).
+
+## Hover preview
+
+### How the popover appears
+
+Same situation as Live Preview: Obsidian shows a placeholder popover for a
+`.ipynb` link, through a code path the post-processor never sees.
+
+```html
+<div class="popover hover-popover">
+  <div class="file-embed mod-generic">
     <div class="file-embed-title">
-      <span class="file-embed-icon">...</span> Welcome.ipynb
+      <span class="file-embed-icon">...</span> file.ipynb
     </div>
   </div>
 </div>
 ```
 
-Two differences from the Live Preview `.internal-embed` case:
+Unlike the Live Preview embed, this placeholder carries no `src` or
+`data-href` attribute. There's nothing in the popover's own DOM to
+identify which file it's for. The target file has to come from elsewhere:
+the `hover-link` workspace event, fired just before the popover appears,
+carries `linktext` and (for links inside a note) `sourcePath`.
 
-- **No `.internal-embed` class, and no `src`/`data-href` attribute anywhere**
-  in the popover. There's nothing in the popover's own DOM to read the
-  target file from — unlike the embed case, this is entirely dependent on
-  the `hover-link` event's cached `linktext`/`sourcePath`, correlated by
-  timing with the `MutationObserver` callback. This is exactly why
-  Excalidraw's own legacy-file hover handling works the same way.
-- **Not a CM6 widget.** This popover is a disposable overlay — created on
-  hover-in, destroyed on hover-out — with no editor/document reconciliation
-  involved. So the "never replace the outer node" rule from Live Preview
-  doesn't apply here: replacing/rebuilding the popover's content outright is
-  safe, matching what Excalidraw's own legacy-hover code does (`node.empty()`
-  + rebuild).
+This event fires from three distinct surfaces, distinguished by its
+`source` field, all producing the same placeholder shape for `.ipynb`:
 
-For comparison, the `.md` popover looks like a scaled-down `MarkdownView`:
-`.popover.hover-popover > .markdown-embed > .markdown-embed-content >
-.markdown-preview-view.markdown-rendered > ...`, with the note's actual
-rendered content nested several levels deep, plus an inline title and
-metadata section. This is why the post-processor is invoked for it: it's a
-real markdown render pass, not a placeholder.
+| Surface | `source` | Trigger |
+|---|---|---|
+| Reading mode, in-note link | `'preview'` | Hover only |
+| Live Preview, in-note link | `'editor'` | Ctrl/Cmd + hover |
+| File explorer | `'file-explorer'` | Ctrl/Cmd + hover (for a popover. The event itself fires on plain hover too) |
 
-#### Scope
+`sourcePath` is only present for the first two. A file explorer item isn't
+inside a note, so `linktext` there is already an absolute vault path, with
+nothing to resolve it against.
 
-Covers `[[links]]` hovered inside a note (reading mode or Live Preview) and
-file explorer items (Ctrl/Cmd + hover). All three sources produce the same
-`.file-embed.mod-generic` popover shape for `.ipynb`, so no source-specific
-handling was needed beyond widening the `hover-link` source filter.
+### Why the popover can be rebuilt freely
 
-::: info
-Implementation details below reflect what was actually built; see git
-history/PRs for how this evolved if the two ever drift.
-:::
+Unlike the Live Preview embed's `.internal-embed` node, this popover isn't
+tracked by any editor/CM6 reconciliation. It's a disposable overlay,
+created on hover-in and destroyed on hover-out, with no document state
+depending on it. Emptying and rebuilding it outright (rather than
+preserving the outer node, the way Live Preview requires) is safe.
 
-## Implementation Details
+### Implementation
 
-### High-level architecture
+`setupHoverPreview()` (`embed-notebooks-hover-preview.ts`):
 
-::: warning
-**Dev gotcha**: `styles.css` at the repo root is `.gitignore`d — it's a
-build artifact, only ever populated by `npm run build -- production`,
-which copies *from* `test-vault/.obsidian/plugins/jupyter/styles.css` *to*
-the repo root for the release bundle, never the other way. That vault-local
-file is the actual git-tracked source of truth the dev instance of
-Obsidian loads. Edit `test-vault/.obsidian/plugins/jupyter/styles.css`
-directly — editing the root copy silently does nothing (it doesn't reach
-the running vault, and the next production build overwrites it anyway).
-Cost real time once already; don't repeat it.
-:::
+- **Tracks the hovered link**: subscribes once to `workspace.on('hover-link',
+  ...)` (an undocumented event, not part of `Workspace`'s typed overloads),
+  filtered to the three sources above. Caches the most recent `{ linktext,
+  sourcePath }`, clearing it whenever an event fires without a `linktext`
+  (the hover ended).
+- **Detects the popover**: a `MutationObserver` per open window (see
+  [Popout windows](#popout-windows-1)), non-subtree on that window's
+  `document.body` (popovers are appended as its direct children). When one
+  appears, the cached `linktext` is resolved via
+  [`metadataCache.getFirstLinkpathDest`](https://docs.obsidian.md/Reference/TypeScript+API/MetadataCache/getFirstLinkpathDest);
+  if it's a `.ipynb` file, the popover gets rebuilt.
+- **Renders the preview**: reads the notebook directly via
+  `vault.cachedRead()` and parses the JSON (deliberately independent of
+  the Jupyter server, so hovering a link never starts it or waits on it).
+  Shows the filename, a cell count, and (if the notebook has one) the
+  first markdown cell's source, truncated to 200 characters and rendered
+  through Obsidian's `MarkdownRenderer.render()`.
+- **Manages the rendered snippet's lifecycle**: `MarkdownRenderer.render()`
+  can register child components (for nested links/embeds within the
+  markdown), so each rendered snippet gets its own `Component`, tracked
+  per-window. The `MutationObserver` callback also watches
+  `mutation.removedNodes` to `unload()` and untrack the component when its
+  popover is dismissed.
+- **Guards against async races**: reading the file and rendering the
+  markdown are both asynchronous, so the popover may already be dismissed
+  by the time either resolves. Both checks use `popoverEl.isConnected`
+  (not `document.body.contains(popoverEl)`, which would check against the
+  *main* window's document regardless of which window the popover actually
+  belongs to).
 
-The feature lives in `src/features/embed-notebooks/`, plus one shared
-service outside it:
+### Popout windows
+
+Same mechanism as Live Preview: the popover-detection observer is attached
+per window via [`forEachWorkspaceWindow()`](#foreachworkspacewindow), each
+with its own tracked-components map. The `hover-link` subscription itself
+stays a single, one-time registration. It's a `Workspace`-level event, not
+tied to any one document, so it fires regardless of which window the hover
+happened in.
+
+## Shared building blocks
+
+### `NotebookEmbedChild`
+
+`NotebookEmbedChild` (`embed-notebooks-shared.ts`) is the piece both
+reading mode and Live Preview mount into their respective containers. It
+extends `MarkdownRenderChild` and renders one of three states based on
+`JupyterEnvironment`'s status, re-rendering whenever
+`JupyterEnvironmentEvent.CHANGE` fires (the server starting or stopping):
+
+| State | What's shown |
+|---|---|
+| `RUNNING` | A `<webview>` loading the notebook from the Jupyter server. Height is configurable via settings (default 500px). No title bar (the webview's own interface already shows the filename). |
+| `STARTING` | A "Jupyter is starting…" message, plus a title bar with the filename. |
+| `EXITED` | A "Jupyter is not running…" message with a **Start Jupyter** button, plus a title bar. |
+
+Each `render()` call empties the container and rebuilds it from scratch.
+
+There was previously a more defensive version that only ever toggled
+`display: none` on pre-built elements, out of concern that DOM mutations
+inside a Live Preview embed might be misread by CM6 as document edits. That
+turned out not to be the actual cause of an earlier, real bug (which was
+replacing the *outer* `.internal-embed` node, described above). CM6 has no
+reason to track the interior of a container the plugin fully owns, so
+rebuilding it is safe, and simpler.
+
+`onload()` also attaches `mousedown`/`click` listeners that stop
+propagation. Without them, clicks inside the embed (the **Start Jupyter**
+button, the webview) fall through to CodeMirror and move the cursor
+instead of registering as a click.
+
+### `renderJupyterMessage()`
+
+`src/services/jupyter-message.ts` renders the centered header/text/button
+layout used for the `STARTING`/`EXITED` states. Shared between
+`NotebookEmbedChild` and `EmbeddedJupyterView` (`src/services/jupyter-view.ts`,
+the full notebook tab). Before this was extracted, each had its own copy,
+and they drifted: the embed's version had no explicit alignment or sizing,
+so it inherited whatever the surrounding context happened to impose. Text
+came out left-aligned in reading mode (no special ancestor) but centered in
+Live Preview (nested inside Obsidian's own centered `.internal-embed`
+placeholder). Centering is now explicit via the shared `jupyter-message-container`
+class, so it's consistent regardless of context. (A minor, deliberate
+exception remains: text size still differs slightly between reading mode
+and Live Preview, since headings there pick up the active theme's
+note-body sizing rather than a fixed one. Left as-is rather than
+overridden, since it's small enough not to be worth flattening.)
+
+### `forEachWorkspaceWindow()`
+
+Both `MutationObserver`-based features initially only watched the main
+window. A note opened via Obsidian's "open in new window" is a genuinely
+separate `document`/`window` pair, so an observer scoped to the main
+window's DOM never saw anything happening in a popout.
+
+`forEachWorkspaceWindow()` (`src/services/workspace-windows.ts`) is a small
+shared helper: given an `attach(doc, win) => cleanup` callback, it runs it
+once per window (immediately for the main window, for every popout window
+already open when the plugin loads, and for every one opened afterward)
+and calls the matching `cleanup()` when that specific window closes (or
+when its own returned `unload()` is called, for full plugin unload).
+
+A few details worth knowing:
+
+- **Future popouts** are caught via `workspace.on('window-open', ...)` /
+  `'window-close'`. Both are public, typed API (`(win: WorkspaceWindow,
+  window: Window) => any`), unlike `hover-link`.
+- **Already-open popouts** at load time have no direct "list open windows"
+  API, so they're found by iterating every leaf (`iterateAllLeaves()`),
+  calling `leaf.getContainer()` on each (returns either the main
+  `WorkspaceRoot` or a popout's `WorkspaceWindow`), and collecting the
+  distinct `WorkspaceWindow` instances found via `instanceof`.
+- **Cleanup on window close doesn't rely on the `MutationObserver` itself
+  noticing anything.** It's not guaranteed that a `MutationObserver` fires
+  individual `removedNodes` records for everything inside a window as its
+  whole document is torn down. That's a different situation from a single
+  node being removed from an otherwise-still-open document (e.g. an embed
+  scrolling out of view), which is what the removal-tracking logic in both
+  features was originally built for. Instead, both features give each
+  window its own tracked-state map (created inside `attach()`, not shared
+  globally), and their returned cleanup function explicitly unloads
+  everything in that window's own map (tied directly to the reliable
+  `window-close` event, not to whatever the observer did or didn't see).
+  Without this, a `NotebookEmbedChild` or hover-preview `Component` created
+  in a popout that later closed would sit in a shared map forever with
+  `onunload()`/`unload()` never called, leaking its
+  `JupyterEnvironmentEvent.CHANGE` listener for the life of the plugin.
+
+## Settings
+
+**Settings → Plugin customization → Embedded notebook height** controls the
+webview height (200–2000px, default 500) used in the `RUNNING` state. It
+only affects the webview; the `STARTING`/`EXITED` states are always
+compact, sized to their content. Requires the note to be closed and
+reopened to take effect.
+
+## Architecture reference
 
 | File | Role |
 |---|---|
-| `embed-notebooks-feature.ts` | Registers the markdown post-processor for reading mode; wires up live preview and hover preview support on load |
-| `embed-notebooks-shared.ts` | The `NotebookEmbedChild` lifecycle class, shared by both reading mode and live preview |
-| `embed-notebooks-live-preview.ts` | `MutationObserver`-based live preview embed support (see below) |
-| `embed-notebooks-hover-preview.ts` | `MutationObserver`-based hover preview support (see below) |
+| `embed-notebooks-feature.ts` | Registers the reading-mode post-processor; wires up Live Preview and hover preview on load |
+| `embed-notebooks-shared.ts` | `NotebookEmbedChild`, shared by reading mode and Live Preview |
+| `embed-notebooks-live-preview.ts` | `MutationObserver`-based Live Preview embed support |
+| `embed-notebooks-hover-preview.ts` | `MutationObserver`-based hover preview support |
 | `embed-notebooks-settings.ts` | Settings interface, defaults, and settings UI registration |
-| `src/services/workspace-windows.ts` | `forEachWorkspaceWindow()`, shared by live preview and hover preview for popout window support (see "Popout window support" below) |
+| `src/services/jupyter-message.ts` | `renderJupyterMessage()`, shared with the full notebook tab view |
+| `src/services/workspace-windows.ts` | `forEachWorkspaceWindow()`, shared by Live Preview and hover preview |
 
-### How `EmbedNotebooksFeature` works
+## Known limitations
 
-The feature class implements the `IFeature` interface and is registered in
-`src/jupyter-for-obsidian.ts`. On load it:
-
-1. Registers its settings UI in the plugin's settings tab.
-2. Registers a markdown post-processor via `registerMarkdownPostProcessor()`,
-   for reading mode.
-3. Calls `setupLivePreview()`, for live preview mode, and stores the
-   returned cleanup handle to call on `onunload()`.
-4. Calls `setupHoverPreview()`, for hover preview, likewise storing its
-   cleanup handle.
-
-Inside the post-processor callback, `processReadingMode()` scans the section
-for `.internal-embed` elements whose `src` ends with `.ipynb`, resolves the
-file, and replaces the element with a `NotebookEmbedChild`-managed container.
-
-### The `NotebookEmbedChild` lifecycle
-
-`NotebookEmbedChild` extends `MarkdownRenderChild`:
-
-- **`onload()`**: subscribes to `JupyterEnvironmentEvent.CHANGE` and calls
-  `render()`. The event subscription is what makes the embed update live when
-  the Jupyter server starts or stops — no manual refresh needed.
-- **`onunload()`**: unsubscribes from the event to prevent listener leaks.
-- **`render()`**: clears the container and rebuilds the DOM based on the
-  current Jupyter environment status.
-
-### Three visual states
-
-| State | What the user sees |
-|---|---|
-| `RUNNING` | A `<webview>` element loading the notebook from the Jupyter server URL. The height is user-configurable via settings (default: 500px). No title bar — the webview has its own. |
-| `STARTING` | A message "Jupyter is starting…" plus a title bar with the filename. Compact height (auto-sized to content). |
-| `EXITED` | A message "Jupyter is not running…" with a **Start Jupyter** button, plus a title bar. Compact height. |
-
-The title bar (filename) is only shown in the `STARTING` and `EXITED` states.
-When the notebook is displayed (`RUNNING`), the webview's own interface
-already includes the filename, so showing it again would be redundant.
-
-### Rendering the notebook (webview)
-
-I use Electron's `<webview>` element (not a standard `<iframe>`) to embed the
-Jupyter interface. This is the same approach as the `EmbeddedJupyterView`
-class in `src/services/jupyter-view.ts` for full-page notebook viewing.
-
-The URL is obtained from `env.getFileUrl(filePath)`, which returns a URL like:
-```
-http://localhost:{port}/{notebooks|lab/tree}/{path}?token={token}
-```
-
-### Settings
-
-The embed height is configurable via **Settings → Plugin customization →
-Embedded notebook height**, with a slider from 200 to 2000 pixels in 50px
-increments. The value is applied as an inline style on the `<webview>` element.
-
-### Live Preview mode
-
-`setupLivePreview()` (in `embed-notebooks-live-preview.ts`) sets up a single
-`MutationObserver`, following the reasoning laid out earlier in this
-document:
-
-- **Detection**: the observer watches for `.internal-embed[src$=".ipynb"]`
-  elements being added to the DOM — Obsidian's native fallback embed for a
-  file type it doesn't recognize. A `data-jupyter-embed-processed`
-  attribute marks embeds already handled, to avoid double-processing.
-- **DOM strategy**: unlike reading mode's `replaceChild`, the outer
-  `.internal-embed` node is left untouched. A container `div` we fully own
-  is inserted as its child, and a `NotebookEmbedChild` (the same class used
-  in reading mode) is mounted inside that container — reusing the existing
-  three-state rendering logic rather than duplicating it.
-- **Observer scope**: the observer watches `app.workspace.containerEl`
-  (the whole leaf/pane layout) rather than `document.body`. This is a
-  single observer — not one per open editor/leaf — since splitting it up
-  wouldn't reduce the total DOM churn watched (only the actively-edited
-  pane produces meaningful churn at a given moment) while adding real
-  complexity in tracking observer lifecycle across leaf open/close/split/
-  mode-switch events. Scoping to `workspace.containerEl` instead of
-  `document.body` still cuts out unrelated churn from modals, the command
-  palette, and other non-workspace UI, for free.
-- **Cheap guards against unrelated churn**: typing anywhere in any open
-  note creates and destroys many small CM6 decoration nodes, all of which
-  pass through this observer's callback. Two guards keep that cheap:
-  `processNodeForEmbeds` skips the `.internal-embed` subtree scan for leaf
-  nodes (`childElementCount === 0`), and `cleanupRemovedNode` does the same
-  before checking whether a removed node contained any tracked embeds
-  (checking containment from the removed node itself, rather than checking
-  `document.body.contains()` for every tracked embed on every unrelated
-  removal).
-- **Resolving `sourcePath`**: a `MutationObserver` callback has no
-  `MarkdownPostProcessorContext`, so there's no `ctx.sourcePath` to resolve
-  relative links against. `resolveSourcePath()` finds the open markdown
-  leaf whose `containerEl` contains the mutated embed node
-  (`app.workspace.getLeavesOfType('markdown')`) and uses that leaf's file —
-  falling back to `app.workspace.getActiveFile()` only if no leaf matches.
-  This is all public, documented Obsidian API (`Workspace.getLeavesOfType`,
-  `View.containerEl`), unlike the private, `@ts-ignore`d `ctx.containerEl`
-  that Excalidraw relies on for its own equivalent needs.
-
-**Known limitation**: `resolveSourcePath()` only checks currently open
-`markdown`-type leaves. If an `.ipynb` embed ever appears somewhere that
-isn't a markdown editor leaf — a Canvas card, another plugin's custom view
-that renders markdown content, or an unusual hover-preview context this
-plugin doesn't yet handle — the leaf lookup finds no owner, and the code
-falls back to `app.workspace.getActiveFile()`, which may resolve relative
-links against the wrong file. This is an accepted tradeoff for now: it only
-affects contexts this plugin doesn't yet support or that fall outside
-typical note-embeds-a-notebook usage, not the main case this feature
-targets. Note that hover preview (see below) doesn't go through
-`resolveSourcePath()` at all — it gets `sourcePath` directly from the
-`hover-link` event instead, which is a more reliable source of truth than
-DOM containment anyway.
-
-Popout windows (Obsidian's "open note in a new window") are now handled —
-see "Popout window support" below for how.
-
-### Hover preview
-
-`setupHoverPreview()` (in `embed-notebooks-hover-preview.ts`) follows the
-reasoning laid out earlier in this document:
-
-- **Tracking the hovered link**: subscribes to `app.workspace.on('hover-link', ...)`,
-  filtered to `source === 'preview' || source === 'editor' || source ===
-  'file-explorer'` (all three empirically confirmed to produce the same
-  `.file-embed.mod-generic` popover for `.ipynb`, see "Scope" above). Caches
-  the most recent `{ linktext, sourcePath }`, clearing it whenever an event
-  fires without a `linktext` (hover ended) — the same pattern Excalidraw
-  uses for its own equivalent caching. `sourcePath` is absent for the file
-  explorer case (`linktext` is already an absolute vault path there), which
-  is fine — `getFirstLinkpathDest` resolves an already-absolute path
-  correctly with an empty `sourcePath`.
-- **Detection**: a `MutationObserver` on `document.body`, non-subtree
-  (popovers are appended as direct children, confirmed empirically and
-  matching Excalidraw's own scoping for this exact case), watching for
-  `.popover.hover-popover` nodes. When one appears, the cached `linktext` is
-  resolved via `metadataCache.getFirstLinkpathDest` — if it's a `.ipynb`
-  file, the popover gets rebuilt.
-- **DOM strategy**: unlike the Live Preview embed, this popover isn't a CM6
-  widget — it's a disposable overlay with no editor reconciliation involved
-  — so `popoverEl.empty()` followed by a full rebuild is safe.
-- **Preview content**: reads the notebook directly via `vault.cachedRead()`
-  and parses the JSON — deliberately independent of `JupyterEnvironment`,
-  so hovering a link never starts the Jupyter server or waits on it. Shows
-  the filename, a cell count, and the first markdown cell's source (if
-  any), truncated to 200 characters before rendering.
-- **Rendering the snippet as real markdown**: the first markdown cell's
-  raw source (each `.ipynb` source line already ends in `\n`, joined with
-  `''`) is *not* shown as plain text — `setText()` into a `<p>` collapses
-  all those newlines into one flowed, unreadable blob, headings and all.
-  Instead it goes through Obsidian's public `MarkdownRenderer.render(app,
-  markdown, el, sourcePath, component)`, the same API a real `.md` hover
-  preview effectively uses, so headings/emphasis/paragraph breaks render
-  properly.
-- **Component lifecycle for the rendered snippet**: `MarkdownRenderer.render()`
-  can register child components (nested links/embeds within the markdown),
-  so each rendered snippet gets its own `Component`, tracked in a
-  `popoverEl -> Component` map. The `MutationObserver` callback also
-  watches `mutation.removedNodes` (not just `addedNodes`) to `unload()` and
-  untrack the component when its popover is dismissed — the live preview
-  and reading-mode embeds don't need this since they reuse `NotebookEmbedChild`,
-  whose lifecycle Obsidian already manages via `MarkdownRenderChild`/`ctx.addChild()`.
-- **Async safety**: reading and parsing the file, and rendering the
-  markdown, are both asynchronous, so by the time either resolves the
-  popover may already have been dismissed (fast hover-away). Both
-  `renderPreview()` (before rendering) and the code right after
-  `MarkdownRenderer.render()` resolves check `popoverEl.isConnected` before
-  touching/tracking it — not `document.body.contains(popoverEl)`, since
-  that would check against the *main* window's document regardless of
-  which window the popover actually belongs to. `isConnected` checks
-  connectedness to whichever document the node itself is in.
-- **Styling is fully self-contained** (`jupyter-hover-preview*` classes in
-  `styles.css`), not borrowed from Obsidian's own `embed-title`/
-  `markdown-embed-title` classes — those are only styled by the active
-  theme when nested inside an `.internal-embed`/`.markdown-embed` ancestor,
-  which this bare popover doesn't have. Same "don't rely on ambient
-  inherited context" lesson learned earlier while unifying the embed's
-  starting/exited message styling across reading mode and Live Preview
-  (see `renderJupyterMessage()` in `src/services/jupyter-message.ts`), just
-  caught before shipping this time instead of after.
-
-### Popout window support
-
-Both `MutationObserver`-based features (live preview and hover preview)
-were originally scoped to the main window only — a note opened in Obsidian's
-"open in new window" popout is a genuinely separate `document`/`window`
-pair, so an observer attached to the main window's DOM never sees anything
-happening there.
-
-`forEachWorkspaceWindow()` (`src/services/workspace-windows.ts`) is a small
-shared helper both features now use instead of attaching directly to
-`document`:
-
-- Takes an `attach(doc, win) => cleanup` callback and runs it once per
-  window: immediately for the main window, and for every popout — both
-  ones already open when the plugin loads and any opened afterward.
-- **Future popouts**: `workspace.on('window-open', ...)` /
-  `'window-close'` — both public, typed API (`(win: WorkspaceWindow,
-  window: Window) => any`), unlike `hover-link`.
-- **Already-open popouts at load time**: there's no direct "list open
-  windows" API, so this iterates every leaf (`iterateAllLeaves()`), calls
-  `leaf.getContainer()` on each (returns a `WorkspaceContainer` — either
-  the main `WorkspaceRoot` or a popout's `WorkspaceWindow`), and collects
-  the distinct `WorkspaceWindow` instances found via `instanceof`.
-- Each `attach()` call gets that window's own `Document`/`Window` (`.doc`/
-  `.win` on `WorkspaceWindow`) and returns its own cleanup, so the helper
-  can tear down exactly the right observer when a specific window closes,
-  independent of the others.
-- **Cleanup on window close doesn't rely on the `MutationObserver`.** It's
-  not guaranteed that a `MutationObserver` fires individual `removedNodes`
-  records for everything inside a window as its whole `document` is torn
-  down (as opposed to a single node being removed from an otherwise-still-open
-  document, e.g. an embed scrolling out of view — the case the existing
-  removal-tracking logic was originally built for). Instead, both features
-  give each window its own tracked-state map (`trackedChildren`/
-  `trackedComponents`), created inside `attach()` rather than shared
-  globally, and their returned cleanup function explicitly unloads
-  everything in that window's own map — tied directly to the reliable
-  `window-close` *workspace* event via `forEachWorkspaceWindow`, not to
-  whatever the observer did or didn't see. This also matters for full
-  plugin unload: without per-window maps, a `NotebookEmbedChild` (or
-  hover-preview `Component`) created in a popout that was later closed
-  would sit in a shared map forever with `onunload()`/`unload()` never
-  called — leaking its `JupyterEnvironmentEvent.CHANGE` listener for the
-  life of the plugin.
-
-For live preview, the per-window `attach()` creates its own `MutationObserver`
-and does its own initial existing-embeds scan, scoped to
-`app.workspace.containerEl` for the main window (no public equivalent
-exists for a popout `WorkspaceWindow`, so popouts use that window's
-`document.body` instead — see the caveat in `embed-notebooks-live-preview.ts`'s
-top comment). `resolveSourcePath()` and the rest of the embed-handling logic
-needed no changes at all: `Node.contains()`/leaf lookups work correctly
-regardless of which document the nodes are in, as long as both nodes being
-compared belong to the same one — which they always will here.
-
-For hover preview, only the popover-detection `MutationObserver` needed to
-move behind `forEachWorkspaceWindow()` — the `hover-link` event subscription
-stays a single, one-time registration, since it's a `Workspace`-level event
-that fires regardless of which window the hover happened in.
-
-### Cases not yet implemented
-
-None currently known. All three embed contexts (reading mode, live
-preview, hover preview) are implemented, including popout windows and the
-file explorer.
+- **`resolveSourcePath()`'s leaf lookup (Live Preview only, reading mode
+  uses `ctx.sourcePath` directly) only checks currently open
+  `markdown`-type leaves.** If a
+  `.ipynb` embed ever appears somewhere that isn't one (a Canvas card,
+  another plugin's custom view that renders markdown content) the lookup
+  finds no owner and falls back to `workspace.getActiveFile()`, which may
+  resolve a relative link against the wrong file. This only affects
+  contexts outside typical note-embeds-a-notebook usage, not the main case
+  this feature targets. (Hover preview doesn't have this limitation. It
+  gets `sourcePath` directly from the `hover-link` event, a more reliable
+  source of truth than DOM containment.)
+- **Popout windows get a broader Live Preview observation scope.** No
+  public equivalent to `app.workspace.containerEl` exists for a popout
+  `WorkspaceWindow`, so those windows are watched at `document.body`
+  instead of a narrower workspace-only root. In practice this mostly means
+  slightly more DOM churn passes through the observer's cheap early-exit
+  checks in a popout than in the main window, not a functional gap.
+- **`MutationObserver`s carry a small always-on cost.** Unlike the
+  post-processor, which only runs when Obsidian is already rendering a
+  section, Live Preview's and hover preview's observers run for the
+  lifetime of the plugin, and *every* DOM mutation within their observed
+  scope (typing anywhere in any open note, not just something touching a
+  `.ipynb` embed) passes through their callback. The cheap early-exit
+  checks described above (skip leaf nodes before any subtree query, skip
+  the removal scan when nothing is tracked, narrower observation roots
+  where possible) keep that cost proportional to filtering, not rendering,
+  but it's a real tradeoff reading mode's on-demand post-processor doesn't
+  have to make.
