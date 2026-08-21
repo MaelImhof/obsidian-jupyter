@@ -9,7 +9,7 @@ than the brain dump it currently is.
 
 The *Jupyter for Obsidian* plugin supports embedding Jupyter notebooks in
 other Obsidian notes — in reading mode, live preview mode, and as hover
-previews for in-note links — using the
+previews (in-note links and the file explorer) — using the
 [Obsidian feature to embed files in notes](https://obsidian.md/help/embeds).
 
 ![Screenshot of an Embed View in read mode](/images/embed-view.png)
@@ -265,9 +265,10 @@ real markdown render pass, not a placeholder.
 
 #### Scope
 
-For now this only covers `[[links]]` hovered inside a note (reading mode or
-Live Preview). File explorer hover previews are deferred — a known future
-addition, not yet implemented.
+Covers `[[links]]` hovered inside a note (reading mode or Live Preview) and
+file explorer items (Ctrl/Cmd + hover). All three sources produce the same
+`.file-embed.mod-generic` popover shape for `.ipynb`, so no source-specific
+handling was needed beyond widening the `hover-link` source filter.
 
 ::: info
 Implementation details below reflect what was actually built; see git
@@ -428,11 +429,15 @@ yet implemented.
 reasoning laid out earlier in this document:
 
 - **Tracking the hovered link**: subscribes to `app.workspace.on('hover-link', ...)`,
-  filtered to `source === 'preview' || source === 'editor'` (in-note links —
-  file explorer hovers are ignored, out of scope for now). Caches the most
-  recent `{ linktext, sourcePath }`, clearing it whenever an event fires
-  without a `linktext` (hover ended) — the same pattern Excalidraw uses for
-  its own equivalent caching.
+  filtered to `source === 'preview' || source === 'editor' || source ===
+  'file-explorer'` (all three empirically confirmed to produce the same
+  `.file-embed.mod-generic` popover for `.ipynb`, see "Scope" above). Caches
+  the most recent `{ linktext, sourcePath }`, clearing it whenever an event
+  fires without a `linktext` (hover ended) — the same pattern Excalidraw
+  uses for its own equivalent caching. `sourcePath` is absent for the file
+  explorer case (`linktext` is already an absolute vault path there), which
+  is fine — `getFirstLinkpathDest` resolves an already-absolute path
+  correctly with an empty `sourcePath`.
 - **Detection**: a `MutationObserver` on `document.body`, non-subtree
   (popovers are appended as direct children, confirmed empirically and
   matching Excalidraw's own scoping for this exact case), watching for
@@ -481,10 +486,5 @@ reasoning laid out earlier in this document:
 
 ### Cases not yet implemented
 
-1. **File explorer hover preview**: hovering a `.ipynb` file in the file
-   explorer (with Ctrl/Cmd held) also shows a popover, following the same
-   `.file-embed.mod-generic` placeholder shape, via `hover-link`'s
-   `source: 'file-explorer'`. Deliberately deferred — see the "Hover
-   preview" section above.
-
-2. **Live preview in popout windows**: see the known limitation noted above.
+**Live preview in popout windows**: see the known limitation noted above.
+This is the only remaining known gap for this feature.

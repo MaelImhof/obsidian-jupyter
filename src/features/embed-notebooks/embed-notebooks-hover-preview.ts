@@ -1,8 +1,14 @@
 import { Component, MarkdownRenderer, TFile } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 
-/** `hover-link` sources this feature reacts to (in-note links only). */
-const HOVER_SOURCES = new Set(['preview', 'editor']);
+/**
+ * `hover-link` sources this feature reacts to: in-note links (reading mode
+ * and Live Preview) and the file explorer. The file explorer requires
+ * Ctrl/Cmd held to actually show a popover, but the event itself fires on
+ * plain hover regardless (nothing renders unless a `.hover-popover`
+ * actually appears, so no extra gating is needed here for that).
+ */
+const HOVER_SOURCES = new Set(['preview', 'editor', 'file-explorer']);
 
 const SNIPPET_LENGTH = 200;
 
@@ -27,9 +33,9 @@ interface NotebookSummary {
 }
 
 /**
- * Sets up hover-preview support for `.ipynb` links inside notes (reading
- * mode and Live Preview). File explorer hover previews are out of scope for
- * now.
+ * Sets up hover-preview support for `.ipynb` files: links inside notes
+ * (reading mode and Live Preview) and file explorer items (requires
+ * Ctrl/Cmd held).
  *
  * Like Live Preview embeds, `.ipynb` popovers never go through
  * `registerMarkdownPostProcessor()`. This was confirmed empirically across
