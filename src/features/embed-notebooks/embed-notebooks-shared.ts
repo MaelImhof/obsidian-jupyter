@@ -41,6 +41,16 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 		this.containerEl.addEventListener('mousedown', (e) => e.stopPropagation());
 		this.containerEl.addEventListener('click', (e) => e.stopPropagation());
 
+		// A <webview> (created by renderWebview() below) is an Electron-native
+		// custom element tied to the specific window/realm it was created in.
+		// Obsidian's pop-out windows are genuinely separate Window/Document
+		// realms, so moving the note containing this embed to a new window
+		// may leave an existing webview orphaned. render() always rebuilds
+		// from scratch based on the live environment status, so it's safe
+		// to call unconditionally here. A no-op for the message states,
+		// and a fresh webview for the running state.
+		this.containerEl.onWindowMigrated(() => this.render());
+
 		this.plugin.env.on(JupyterEnvironmentEvent.CHANGE, this.changeEventListener);
 		this.render();
 	}
@@ -112,13 +122,31 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 	 * `getFileUrl` returns null otherwise.
 	 */
 	private renderWebview(container: HTMLElement): void {
+		// The webview element is created using `doc.createElement` instead
+		// of Obsidian's built-in `createEl`, because the latter creates the
+		// element and appends it in the same call, before the webview has
+		// been configured (allowpopups, partition, ...). This apparently
+		// contributes to crashes when a Jupyter view switches windows (open
+		// in new window).
+		//
+		// The webview is fully configured before being attached to the DOM
+		// at all. Electron starts provisioning a `<webview>`'s guest session
+		// as soon as it's connected, so `partition` has to be set before
+		// that happens, not after. The previous code created-and-attached in
+		// one step via `createEl`, then set `partition` afterwards, which
+		// still loaded content fine for ordinary use, but reliably crashed
+		// Obsidian outright when the leaf was later moved to a pop-out
+		// window.
 		// @ts-ignore — "webview" is an Electron element, not a standard HTML tag
-		const webview = container.createEl('webview');
+		const webview = container.doc.createElement('webview');
 		webview.setAttribute('allowpopups', '');
-		// @ts-ignore — appId is a property injected by the Surfing plugin
-		webview.setAttribute('partition', 'persist:surfing-vault-' + this.plugin.app.appId);
+		// @ts-ignore — this.plugin.app.appId is undocumented, but a genuine
+		// Obsidian property (confirmed via the core Web Viewer plugin's own
+		// webview).
+		webview.setAttribute('partition', 'persist:vault-' + this.plugin.app.appId);
 		webview.addClass('jupyter-webview');
 		webview.style.height = this.plugin.settings.embedHeight + 'px';
+		container.appendChild(webview);
 		webview.setAttribute('src', this.plugin.env.getFileUrl(this.file.path) as string);
 	}
 }
