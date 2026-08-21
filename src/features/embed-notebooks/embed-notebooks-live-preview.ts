@@ -1,5 +1,6 @@
 import { MarkdownView, TFile } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
+import { forEachWorkspaceWindow } from '@/services/workspace-windows';
 import { EMBED_CONTAINER_CLASS, NotebookEmbedChild } from './embed-notebooks-shared';
 
 /**
@@ -28,11 +29,18 @@ import { EMBED_CONTAINER_CLASS, NotebookEmbedChild } from './embed-notebooks-sha
  * internal bookkeeping for the widget. Modifying its interior is safe,
  * since Obsidian only tracks the node's presence, not its content.
  *
- * The observer watches `app.workspace.containerEl` (the whole leaf/pane
- * layout) rather than `document.body`, so it doesn't fire for churn in
- * modals, the command palette, or other non-workspace UI. It does not
- * see notes opened in popout windows (a separate `document`), which is a
- * known limitation to revisit later.
+ * A separate observer is attached per open window (main window and any
+ * popout windows, aka notes opened in new windows via
+ * `forEachWorkspaceWindow()`), since each is a genuinely separate
+ * `document`/`window` pair and a single observer only ever sees DOM churn
+ * in its own document. For the main window the observer watches
+ * `app.workspace.containerEl` (the whole leaf/pane layout) rather than
+ * `document.body`, so it doesn't fire for churn in modals, the command
+ * palette, or other non-workspace UI. There's no public equivalent to
+ * `containerEl` for a popout `WorkspaceWindow`, so popouts fall back to
+ * that window's `document.body`, a broader scope there, in practice not
+ * a large difference since popouts tend to have little non-workspace UI
+ * chrome around them.
  *
  * Lifecycle of each `NotebookEmbedChild` is tracked in a Map and cleaned
  * up when the embed element is removed from the DOM (e.g., the section is
@@ -43,28 +51,16 @@ import { EMBED_CONTAINER_CLASS, NotebookEmbedChild } from './embed-notebooks-sha
  * implementation approach.
  */
 export function setupLivePreview(plugin: JupyterForObsidian): { unload: () => void } {
-	const observer = new MutationObserver((mutations) => {
-		for (const mutation of mutations) {
-			for (const node of Array.from(mutation.addedNodes)) {
-				if (!(node instanceof HTMLElement)) continue;
-				processNodeForEmbeds(node);
-			}
-			for (const node of Array.from(mutation.removedNodes)) {
-				if (!(node instanceof HTMLElement)) continue;
-				cleanupRemovedNode(node);
-			}
-		}
-	});
-
-	const trackedChildren = new Map<HTMLElement, NotebookEmbedChild>();
-
 	/**
 	 * Checks a DOM node and its descendants for unprocessed `.ipynb`
 	 * embeds and processes them.
 	 */
-	function processNodeForEmbeds(node: HTMLElement): void {
+	function processNodeForEmbeds(
+		node: HTMLElement,
+		trackedChildren: Map<HTMLElement, NotebookEmbedChild>
+	): void {
 		if (isUnprocessedIpynbEmbed(node)) {
-			setupEmbed(node);
+			setupEmbed(node, trackedChildren);
 			return;
 		}
 		// Leaf nodes (the common case for CM6 decoration churn while
@@ -73,7 +69,7 @@ export function setupLivePreview(plugin: JupyterForObsidian): { unload: () => vo
 
 		Array.from(node.getElementsByClassName('internal-embed')).forEach((el) => {
 			if (isUnprocessedIpynbEmbed(el)) {
-				setupEmbed(el as HTMLElement);
+				setupEmbed(el as HTMLElement, trackedChildren);
 			}
 		});
 	}
@@ -115,7 +111,10 @@ export function setupLivePreview(plugin: JupyterForObsidian): { unload: () => vo
 	 * inserts our container as a child. Sets the processed attribute to
 	 * prevent double-processing.
 	 */
-	function setupEmbed(embed: HTMLElement): void {
+	function setupEmbed(
+		embed: HTMLElement,
+		trackedChildren: Map<HTMLElement, NotebookEmbedChild>
+	): void {
 		const src = embed.getAttribute('src');
 		if (!src) return;
 
@@ -148,7 +147,10 @@ export function setupLivePreview(plugin: JupyterForObsidian): { unload: () => vo
 	 *   2. The removed node contains tracked containers as descendants
 	 *      (e.g., a whole CodeMirror section being removed on scroll).
 	 */
-	function cleanupRemovedNode(node: HTMLElement): void {
+	function cleanupRemovedNode(
+		node: HTMLElement,
+		trackedChildren: Map<HTMLElement, NotebookEmbedChild>
+	): void {
 		const directChild = trackedChildren.get(node);
 		if (directChild) {
 			directChild.onunload();
@@ -168,30 +170,57 @@ export function setupLivePreview(plugin: JupyterForObsidian): { unload: () => vo
 		}
 	}
 
-	// Start observing once layout is ready
-	plugin.app.workspace.onLayoutReady(() => {
-		const root = plugin.app.workspace.containerEl;
+	// Each window gets its own map, not one shared globally, so that a
+	// window's embeds can be unloaded specifically when *that* window
+	// closes (see the returned cleanup below). Relying on the
+	// MutationObserver to report individual node removals as a whole
+	// document is torn down isn't something to depend on.
+	const windows = forEachWorkspaceWindow(plugin, (doc) => {
+		const trackedChildren = new Map<HTMLElement, NotebookEmbedChild>();
+
+		// No public equivalent to `app.workspace.containerEl` exists for a
+		// popout `WorkspaceWindow`, only the main window gets the narrower
+		// scope.
+		const root = doc === document ? plugin.app.workspace.containerEl : doc.body;
+
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of Array.from(mutation.addedNodes)) {
+					if (!(node instanceof HTMLElement)) continue;
+					processNodeForEmbeds(node, trackedChildren);
+				}
+				for (const node of Array.from(mutation.removedNodes)) {
+					if (!(node instanceof HTMLElement)) continue;
+					cleanupRemovedNode(node, trackedChildren);
+				}
+			}
+		});
 
 		observer.observe(root, {
 			childList: true,
 			subtree: true
 		});
 
-		// Process any existing embeds added before the observer was set up
+		// Process any existing embeds already in this window before the
+		// observer was attached.
 		root.querySelectorAll('.internal-embed').forEach((el) => {
 			if (isUnprocessedIpynbEmbed(el)) {
-				setupEmbed(el as HTMLElement);
+				setupEmbed(el as HTMLElement, trackedChildren);
 			}
 		});
-	});
 
-	return {
-		unload: () => {
+		return () => {
 			observer.disconnect();
 			for (const [, child] of trackedChildren) {
 				child.onunload();
 			}
 			trackedChildren.clear();
+		};
+	});
+
+	return {
+		unload: () => {
+			windows.unload();
 		}
 	};
 }

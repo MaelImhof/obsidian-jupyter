@@ -1,5 +1,6 @@
 import { Component, MarkdownRenderer, TFile } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
+import { forEachWorkspaceWindow } from '@/services/workspace-windows';
 
 /**
  * `hover-link` sources this feature reacts to: in-note links (reading mode
@@ -72,16 +73,18 @@ export function setupHoverPreview(plugin: JupyterForObsidian): { unload: () => v
 	 */
 	let lastHover: HoveredLink | null = null;
 
-	// One Component per popover that got a rendered markdown snippet, so its
-	// lifecycle (any embeds/links MarkdownRenderer registers as children) is
-	// unloaded when the popover is dismissed, not just left dangling.
-	const trackedComponents = new Map<HTMLElement, Component>();
-
 	/**
 	 * Called by the mutation observer when a `.popover` or `.hover-popover`
 	 * element is added to the DOM.
+	 *
+	 * @param popoverEl The container element for the popup to handle.
+	 * @param trackedComponents That window's own map. Each window gets its
+	 *                          own map for cleanup reasons.
 	 */
-	function handlePopover(popoverEl: HTMLElement): void {
+	function handlePopover(
+		popoverEl: HTMLElement,
+		trackedComponents: Map<HTMLElement, Component>
+	): void {
 		if (!lastHover) return;
 
 		// Get the likely source file (whose link is being hovered) of the
@@ -92,19 +95,25 @@ export function setupHoverPreview(plugin: JupyterForObsidian): { unload: () => v
 		const file = plugin.app.metadataCache.getFirstLinkpathDest(src, lastHover.sourcePath);
 		if (!file || !(file instanceof TFile)) return;
 
-		void renderPreview(popoverEl, file);
+		void renderPreview(popoverEl, file, trackedComponents);
 	}
 
 	/**
 	 * Replaces the default popover HTML with a preview specific to the
 	 * Jupyter plugin and file type.
 	 */
-	async function renderPreview(popoverEl: HTMLElement, file: TFile): Promise<void> {
+	async function renderPreview(
+		popoverEl: HTMLElement,
+		file: TFile,
+		trackedComponents: Map<HTMLElement, Component>
+	): Promise<void> {
 		const summary = await summarizeNotebook(file);
 
 		// The popover may have already been dismissed while the file was
-		// being read, don't resurrect it.
-		if (!document.body.contains(popoverEl)) return;
+		// being read, don't resurrect it. `isConnected` (rather than
+		// `document.body.contains`) works regardless of which window's
+		// document the popover actually belongs to.
+		if (!popoverEl.isConnected) return;
 
 		popoverEl.empty();
 		const wrapper = popoverEl.createDiv();
@@ -133,7 +142,7 @@ export function setupHoverPreview(plugin: JupyterForObsidian): { unload: () => v
 			);
 
 			// The popover may have been dismissed while rendering resolved.
-			if (!document.body.contains(popoverEl)) {
+			if (!popoverEl.isConnected) {
 				component.unload();
 				trackedComponents.delete(popoverEl);
 			}
@@ -176,32 +185,6 @@ export function setupHoverPreview(plugin: JupyterForObsidian): { unload: () => v
 		return text.length > SNIPPET_LENGTH ? text.slice(0, SNIPPET_LENGTH).trimEnd() + '…' : text;
 	}
 
-	/**
-	 * `observer` is a reference to the `MutationObserver` used to detect
-	 * popovers created or removed in the DOM.
-	 *
-	 * On popup creation, if it is a popup for a Jupyter notebook, it is
-	 * handled and rendered properly.
-	 *
-	 * On popup deletion, related state is cleaned up.
-	 */
-	const observer = new MutationObserver((mutations) => {
-		for (const mutation of mutations) {
-			for (const node of Array.from(mutation.addedNodes)) {
-				if (!(node instanceof HTMLElement)) continue;
-				if (!node.hasClass('popover') || !node.hasClass('hover-popover')) continue;
-				handlePopover(node);
-			}
-			for (const node of Array.from(mutation.removedNodes)) {
-				if (!(node instanceof HTMLElement)) continue;
-				const component = trackedComponents.get(node);
-				if (!component) continue;
-				component.unload();
-				trackedComponents.delete(node);
-			}
-		}
-	});
-
 	plugin.registerEvent(
 		// @ts-ignore: 'hover-link' is an undocumented event, not part of
 		// Workspace's typed overloads.
@@ -215,19 +198,67 @@ export function setupHoverPreview(plugin: JupyterForObsidian): { unload: () => v
 		})
 	);
 
-	plugin.app.workspace.onLayoutReady(() => {
-		// Popovers are appended as direct children of document.body, so no
-		// subtree traversal is needed.
-		observer.observe(document.body, { childList: true, subtree: false });
-	});
+	// `hover-link` fires regardless of which window the hover happened in
+	// (it's a Workspace-level event, not tied to any one document), so it's
+	// only registered once above. The popover itself, though, is real DOM
+	// in whichever window it was triggered from. A `MutationObserver` has
+	// to be attached per window to see it.
+	//
+	// Each window also gets its own `trackedComponents` map, rather than
+	// one shared globally. A window's rendered snippets need to be
+	// unloaded specifically when *that* window closes (the returned
+	// cleanup below), and relying on the MutationObserver to report
+	// individual node removals as a whole document is torn down isn't
+	// something to depend on.
+	const windows = forEachWorkspaceWindow(plugin, (doc) => {
+		// One Component per popover that got a rendered markdown snippet,
+		// so its lifecycle (any embeds/links MarkdownRenderer registers as
+		// children) is unloaded when the popover is dismissed, not just
+		// left dangling.
+		const trackedComponents = new Map<HTMLElement, Component>();
 
-	return {
-		unload: () => {
+		/**
+		 * `observer` is a reference to the `MutationObserver` used to detect
+		 * popovers created or removed in the DOM.
+		 *
+		 * On popup creation, if it is a popup for a Jupyter notebook, it is
+		 * handled and rendered properly.
+		 *
+		 * On popup deletion, related state is cleaned up.
+		 */
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of Array.from(mutation.addedNodes)) {
+					if (!(node instanceof HTMLElement)) continue;
+					if (!node.hasClass('popover') || !node.hasClass('hover-popover')) continue;
+					handlePopover(node, trackedComponents);
+				}
+				for (const node of Array.from(mutation.removedNodes)) {
+					if (!(node instanceof HTMLElement)) continue;
+					const component = trackedComponents.get(node);
+					if (!component) continue;
+					component.unload();
+					trackedComponents.delete(node);
+				}
+			}
+		});
+
+		// Popovers are appended as direct children of the window's body, so
+		// no subtree traversal is needed.
+		observer.observe(doc.body, { childList: true, subtree: false });
+
+		return () => {
 			observer.disconnect();
 			for (const component of trackedComponents.values()) {
 				component.unload();
 			}
 			trackedComponents.clear();
+		};
+	});
+
+	return {
+		unload: () => {
+			windows.unload();
 		}
 	};
 }

@@ -291,7 +291,8 @@ the running vault, and the next production build overwrites it anyway).
 Cost real time once already; don't repeat it.
 :::
 
-The feature lives in `src/features/embed-notebooks/` and consists of:
+The feature lives in `src/features/embed-notebooks/`, plus one shared
+service outside it:
 
 | File | Role |
 |---|---|
@@ -300,6 +301,7 @@ The feature lives in `src/features/embed-notebooks/` and consists of:
 | `embed-notebooks-live-preview.ts` | `MutationObserver`-based live preview embed support (see below) |
 | `embed-notebooks-hover-preview.ts` | `MutationObserver`-based hover preview support (see below) |
 | `embed-notebooks-settings.ts` | Settings interface, defaults, and settings UI registration |
+| `src/services/workspace-windows.ts` | `forEachWorkspaceWindow()`, shared by live preview and hover preview for popout window support (see "Popout window support" below) |
 
 ### How `EmbedNotebooksFeature` works
 
@@ -415,13 +417,8 @@ targets. Note that hover preview (see below) doesn't go through
 `hover-link` event instead, which is a more reliable source of truth than
 DOM containment anyway.
 
-**Known limitation**: Obsidian's "open note in a new window" feature opens
-a note in a separate `document`. This observer only watches the main
-window, so embeds in a note opened in a popout window won't get live
-preview support — they'll show Obsidian's default fallback embed instead.
-Fixing this would mean listening for the `window-open` workspace event and
-attaching an additional observer scoped to that window's `document`. Not
-yet implemented.
+Popout windows (Obsidian's "open note in a new window") are now handled —
+see "Popout window support" below for how.
 
 ### Hover preview
 
@@ -472,8 +469,11 @@ reasoning laid out earlier in this document:
   markdown, are both asynchronous, so by the time either resolves the
   popover may already have been dismissed (fast hover-away). Both
   `renderPreview()` (before rendering) and the code right after
-  `MarkdownRenderer.render()` resolves check `document.body.contains(popoverEl)`
-  before touching/tracking it.
+  `MarkdownRenderer.render()` resolves check `popoverEl.isConnected` before
+  touching/tracking it — not `document.body.contains(popoverEl)`, since
+  that would check against the *main* window's document regardless of
+  which window the popover actually belongs to. `isConnected` checks
+  connectedness to whichever document the node itself is in.
 - **Styling is fully self-contained** (`jupyter-hover-preview*` classes in
   `styles.css`), not borrowed from Obsidian's own `embed-title`/
   `markdown-embed-title` classes — those are only styled by the active
@@ -484,7 +484,68 @@ reasoning laid out earlier in this document:
   (see `renderJupyterMessage()` in `src/services/jupyter-message.ts`), just
   caught before shipping this time instead of after.
 
+### Popout window support
+
+Both `MutationObserver`-based features (live preview and hover preview)
+were originally scoped to the main window only — a note opened in Obsidian's
+"open in new window" popout is a genuinely separate `document`/`window`
+pair, so an observer attached to the main window's DOM never sees anything
+happening there.
+
+`forEachWorkspaceWindow()` (`src/services/workspace-windows.ts`) is a small
+shared helper both features now use instead of attaching directly to
+`document`:
+
+- Takes an `attach(doc, win) => cleanup` callback and runs it once per
+  window: immediately for the main window, and for every popout — both
+  ones already open when the plugin loads and any opened afterward.
+- **Future popouts**: `workspace.on('window-open', ...)` /
+  `'window-close'` — both public, typed API (`(win: WorkspaceWindow,
+  window: Window) => any`), unlike `hover-link`.
+- **Already-open popouts at load time**: there's no direct "list open
+  windows" API, so this iterates every leaf (`iterateAllLeaves()`), calls
+  `leaf.getContainer()` on each (returns a `WorkspaceContainer` — either
+  the main `WorkspaceRoot` or a popout's `WorkspaceWindow`), and collects
+  the distinct `WorkspaceWindow` instances found via `instanceof`.
+- Each `attach()` call gets that window's own `Document`/`Window` (`.doc`/
+  `.win` on `WorkspaceWindow`) and returns its own cleanup, so the helper
+  can tear down exactly the right observer when a specific window closes,
+  independent of the others.
+- **Cleanup on window close doesn't rely on the `MutationObserver`.** It's
+  not guaranteed that a `MutationObserver` fires individual `removedNodes`
+  records for everything inside a window as its whole `document` is torn
+  down (as opposed to a single node being removed from an otherwise-still-open
+  document, e.g. an embed scrolling out of view — the case the existing
+  removal-tracking logic was originally built for). Instead, both features
+  give each window its own tracked-state map (`trackedChildren`/
+  `trackedComponents`), created inside `attach()` rather than shared
+  globally, and their returned cleanup function explicitly unloads
+  everything in that window's own map — tied directly to the reliable
+  `window-close` *workspace* event via `forEachWorkspaceWindow`, not to
+  whatever the observer did or didn't see. This also matters for full
+  plugin unload: without per-window maps, a `NotebookEmbedChild` (or
+  hover-preview `Component`) created in a popout that was later closed
+  would sit in a shared map forever with `onunload()`/`unload()` never
+  called — leaking its `JupyterEnvironmentEvent.CHANGE` listener for the
+  life of the plugin.
+
+For live preview, the per-window `attach()` creates its own `MutationObserver`
+and does its own initial existing-embeds scan, scoped to
+`app.workspace.containerEl` for the main window (no public equivalent
+exists for a popout `WorkspaceWindow`, so popouts use that window's
+`document.body` instead — see the caveat in `embed-notebooks-live-preview.ts`'s
+top comment). `resolveSourcePath()` and the rest of the embed-handling logic
+needed no changes at all: `Node.contains()`/leaf lookups work correctly
+regardless of which document the nodes are in, as long as both nodes being
+compared belong to the same one — which they always will here.
+
+For hover preview, only the popover-detection `MutationObserver` needed to
+move behind `forEachWorkspaceWindow()` — the `hover-link` event subscription
+stays a single, one-time registration, since it's a `Workspace`-level event
+that fires regardless of which window the hover happened in.
+
 ### Cases not yet implemented
 
-**Live preview in popout windows**: see the known limitation noted above.
-This is the only remaining known gap for this feature.
+None currently known. All three embed contexts (reading mode, live
+preview, hover preview) are implemented, including popout windows and the
+file explorer.
