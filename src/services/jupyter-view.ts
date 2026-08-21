@@ -169,12 +169,25 @@ export class EmbeddedJupyterView extends FileView {
 			'Your file will be displayed shortly.'
 		);
 
+		// Created detached (via `doc.createElement`, not Obsidian's
+		// `createEl`, which both creates *and appends in the same call*,
+		// see its own doc comment) and fully configured, including
+		// `partition`, before being attached to the DOM at all. Electron
+		// starts provisioning a `<webview>`'s guest session as soon as it's
+		// connected, so `partition` has to be set before that happens, not
+		// after. The previous code created-and-attached in one step via
+		// `createEl`, then set `partition` afterwards (which still loaded
+		// content fine for ordinary use, but reliably crashed Obsidian
+		// outright when the leaf was later moved to a pop-out window).
 		// @ts-ignore for "webview"
-		this.webviewEl = this.contentEl.createEl('webview');
+		this.webviewEl = this.contentEl.doc.createElement('webview');
 		this.webviewEl.setAttribute('allowpopups', '');
-		// @ts-ignore for this.app.appId
-		this.webviewEl.setAttribute('partition', 'persist:surfing-vault-' + this.app.appId);
+		// @ts-ignore for this.app.appId. Undocumented, but a genuine
+		// Obsidian property (confirmed via the core Web Viewer plugin's own
+		// webview).
+		this.webviewEl.setAttribute('partition', 'persist:vault-' + this.app.appId);
 		this.webviewEl.addClass('jupyter-webview', 'jupyter-webview-loading');
+		this.contentEl.appendChild(this.webviewEl);
 		this.webviewEl.setAttribute('src', env.getFileUrl(this.openedFile.path) as string);
 		this.webviewEl.addEventListener(
 			'dom-ready',
@@ -192,6 +205,18 @@ export class EmbeddedJupyterView extends FileView {
 
 	protected async onOpen() {
 		this.plugin.env.on(JupyterEnvironmentEvent.CHANGE, this.changeEventListener);
+
+		// A <webview> is an Electron-native custom element tied to the
+		// specific window/realm it was created in. Obsidian's pop-out
+		// windows are genuinely separate Window/Document realms, so moving
+		// this view's leaf to a new window may leave an existing webview
+		// orphaned. `onJupyterEnvironmentStatusChange` re-dispatches on the
+		// live status. A fresh webview for RUNNING, otherwise a harmless
+		// rebuild of the current message state, which has no native
+		// resources to repair in the first place.
+		this.contentEl.onWindowMigrated(() => {
+			void this.onJupyterEnvironmentStatusChange(this.plugin.env);
+		});
 	}
 
 	protected async onClose() {
