@@ -14,6 +14,10 @@ import {
 	DEFAULT_UPDATE_MODAL_SETTINGS,
 	UpdateModalSettings
 } from '@/features/update-modal/update-modal-settings';
+import {
+	DEFAULT_EMBED_NOTEBOOKS_SETTINGS,
+	EmbedNotebooksSettings
+} from '@/features/embed-notebooks/embed-notebooks-settings';
 import { EventEmitter } from 'stream';
 
 /**
@@ -30,7 +34,8 @@ export type Settings = Flatten<
 	OpenNotebooksSettings &
 		CreateNotebooksSettings &
 		UpdateModalSettings &
-		DeleteCheckpointsSettings
+		DeleteCheckpointsSettings &
+		EmbedNotebooksSettings
 >;
 
 /**
@@ -41,7 +46,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	...DEFAULT_OPEN_NOTEBOOKS_SETTINGS,
 	...DEFAULT_CREATE_NOTEBOOKS_SETTINGS,
 	...DEFAULT_UPDATE_MODAL_SETTINGS,
-	...DEFAULT_DELETE_CHECKPOINTS_SETTINGS
+	...DEFAULT_DELETE_CHECKPOINTS_SETTINGS,
+	...DEFAULT_EMBED_NOTEBOOKS_SETTINGS
 };
 
 /**

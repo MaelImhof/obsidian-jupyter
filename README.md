@@ -43,6 +43,10 @@ Open `.ipynb` files with Jupyter Notebook or Jupyter Lab directly within the Obs
 
     See, open and edit `.ipynb` files inside Obsidian
 
+- **Embed notebooks in other notes**
+
+    Reference a notebook from another note with `![[notebook.ipynb]]`, in reading mode, Live Preview, and as a hover preview.
+
 - **Jupyter server management**
 
     Start and stop Jupyter without ever seeing a terminal, using Obsidian commands and/or ribbon icons.
