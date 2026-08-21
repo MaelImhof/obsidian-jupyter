@@ -141,6 +141,32 @@ Possible values are
 
 By default, new notebooks are opened in a new tab.
 
+### Live Preview Embeds
+
+Whether notebooks embedded with `![[my-notebook.ipynb]]` are shown as live, interactive embeds while editing a note in [Live Preview](https://help.obsidian.md/Editing+and+formatting/Live+preview) mode. Detecting these embeds requires the plugin to continuously watch the editor for changes, so this can be turned off if that matters to you for performance, for instance in a very large vault. When disabled, Obsidian's own default placeholder is shown instead.
+
+This setting has no effect on embeds shown in reading mode, which always work the same way regardless.
+
+Takes effect immediately, no need to restart Obsidian. If a note with an already-rendered Live Preview embed is open when you disable this, though, that embed may stay visible until you close and reopen the note.
+
+Default value is yes (Live Preview embeds are shown).
+
+### Hover Preview
+
+Whether hovering a link to a `.ipynb` file shows a preview of the notebook's content, the same way Obsidian shows a preview when hovering a link to another note. Same performance consideration as [Live Preview embeds](#live-preview-embeds) above. When disabled, hovering a notebook link shows Obsidian's default placeholder instead.
+
+Takes effect immediately, no need to restart Obsidian.
+
+Default value is yes (hover previews are shown).
+
+### Embedded Notebook Height
+
+The height, in pixels, of the webview used to display an embedded notebook while it is running.
+
+Requires the note to be closed and reopened to take effect.
+
+Default value is 500 pixels.
+
 ## Advanced
 
 ### Jupyter Starting Timeout
