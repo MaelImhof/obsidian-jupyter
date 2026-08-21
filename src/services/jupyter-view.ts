@@ -1,4 +1,4 @@
-import { ButtonComponent, FileView, TFile, Workspace, WorkspaceLeaf } from 'obsidian';
+import { FileView, TFile, Workspace, WorkspaceLeaf } from 'obsidian';
 import JupyterForObsidian from '@/jupyter-for-obsidian';
 import {
 	JupyterEnvironment,
@@ -6,6 +6,7 @@ import {
 	JupyterEnvironmentStatus
 } from '@/services/jupyter-environment';
 import { JupyterModalButton } from '@/services/jupyter-modal';
+import { renderJupyterMessage } from '@/services/jupyter-message';
 
 export const JUPYTER_VIEW_TYPE = 'jupyter-view';
 
@@ -58,20 +59,16 @@ export class EmbeddedJupyterView extends FileView {
 		// Clear the content of the view, only display the message
 		this.contentEl.empty();
 
-		this.messageContainerEl = this.contentEl.createDiv();
-		this.messageContainerEl.addClass('jupyter-message-container');
-		this.messageHeaderEl = this.messageContainerEl.createEl('h2');
-		this.messageHeaderEl.addClass('jupyter-message-header');
-		this.messageHeaderEl.setText(header);
-		this.messageTextEl = this.messageContainerEl.createEl('p');
-		this.messageTextEl.addClass('jupyter-message-text');
-		this.messageTextEl.setText(text);
-
-		if (button !== null) {
-			const buttonEl = new ButtonComponent(this.messageContainerEl);
-			buttonEl.setButtonText(button.text);
-			buttonEl.onClick(button.onClick.bind(this));
-		}
+		const { containerEl, headerEl, textEl } = renderJupyterMessage(
+			this.contentEl,
+			'h2',
+			header,
+			text,
+			button ? { text: button.text, onClick: button.onClick.bind(this) } : undefined
+		);
+		this.messageContainerEl = containerEl;
+		this.messageHeaderEl = headerEl;
+		this.messageTextEl = textEl;
 	}
 
 	async onLoadFile(file: TFile) {
