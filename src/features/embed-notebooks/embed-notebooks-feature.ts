@@ -4,6 +4,7 @@ import { IFeature } from '@/features/plugin-feature';
 import { registerEmbedNotebooksSettingsUI } from './embed-notebooks-settings';
 import { EMBED_CONTAINER_CLASS, NotebookEmbedChild } from './embed-notebooks-shared';
 import { setupLivePreview } from './embed-notebooks-live-preview';
+import { setupHoverPreview } from './embed-notebooks-hover-preview';
 
 /**
  * Feature that renders embedded Jupyter notebooks in other notes.
@@ -14,11 +15,13 @@ import { setupLivePreview } from './embed-notebooks-live-preview';
  * elements and replaces them with live notebook previews.
  *
  * **Live preview** embeds are handled by a separate MutationObserver
- * (see `embed-notebooks-live-preview.ts`).
+ * (see `embed-notebooks-live-preview.ts`), and **hover previews** by
+ * another (see `embed-notebooks-hover-preview.ts`).
  */
 export class EmbedNotebooksFeature implements IFeature {
 	private plugin!: JupyterForObsidian;
 	private livePreviewCleanup?: { unload: () => void };
+	private hoverPreviewCleanup?: { unload: () => void };
 
 	async onload(plugin: JupyterForObsidian): Promise<void> {
 		this.plugin = plugin;
@@ -32,10 +35,12 @@ export class EmbedNotebooksFeature implements IFeature {
 		);
 
 		this.livePreviewCleanup = setupLivePreview(plugin);
+		this.hoverPreviewCleanup = setupHoverPreview(plugin);
 	}
 
 	onunload(): void {
 		this.livePreviewCleanup?.unload();
+		this.hoverPreviewCleanup?.unload();
 	}
 
 	/**

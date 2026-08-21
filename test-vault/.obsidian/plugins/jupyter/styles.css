@@ -40,3 +40,30 @@ If your plugin does not need CSS, delete this file.
 .jupyter-embed-content .jupyter-webview {
 	height: 500px;
 }
+
+.jupyter-hover-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px;
+}
+
+.jupyter-hover-preview-title {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-bold);
+	color: var(--text-normal);
+	line-height: 1.3;
+}
+
+.jupyter-hover-preview-meta {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.jupyter-hover-preview-snippet {
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+	line-height: 1.4;
+	padding-top: 6px;
+	border-top: 1px solid var(--background-modifier-border);
+}
