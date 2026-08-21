@@ -405,11 +405,22 @@ A few details worth knowing:
 
 ## Settings
 
-**Settings → Plugin customization → Embedded notebook height** controls the
-webview height (200–2000px, default 500) used in the `RUNNING` state. It
-only affects the webview; the `STARTING`/`EXITED` states are always
-compact, sized to their content. Requires the note to be closed and
-reopened to take effect.
+All under **Settings → Plugin customization**:
+
+- **Embedded notebook height** controls the webview height (200–2000px,
+  default 500) used in the `RUNNING` state. It only affects the webview;
+  the `STARTING`/`EXITED` states are always compact, sized to their
+  content. Requires the note to be closed and reopened to take effect.
+- **Live Preview embeds** and **Hover preview** are independent toggles
+  (both on by default) to disable `setupLivePreview()`/`setupHoverPreview()`
+  entirely (the opt-out for the always-on `MutationObserver` cost
+  described under [Known limitations](#known-limitations)). Toggling either
+  takes effect immediately: `EmbedNotebooksFeature` listens for
+  `settingsProxy.on('change:enableLivePreviewEmbeds', ...)` (and the hover
+  preview equivalent) and calls the setup function or its returned
+  `unload()` right away. With either off, a `.ipynb` embed/hover just falls
+  back to Obsidian's own default placeholder. Reading mode is unaffected
+  either way, since it has no equivalent ongoing cost to opt out of.
 
 ## Architecture reference
 
@@ -452,4 +463,5 @@ reopened to take effect.
   the removal scan when nothing is tracked, narrower observation roots
   where possible) keep that cost proportional to filtering, not rendering,
   but it's a real tradeoff reading mode's on-demand post-processor doesn't
-  have to make.
+  have to make. Anyone for whom this matters can turn either observer off
+  entirely (see [Settings](#settings)).

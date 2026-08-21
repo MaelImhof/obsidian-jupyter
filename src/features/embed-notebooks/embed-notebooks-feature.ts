@@ -16,7 +16,12 @@ import { setupHoverPreview } from './embed-notebooks-hover-preview';
  *
  * **Live preview** embeds are handled by a separate MutationObserver
  * (see `embed-notebooks-live-preview.ts`), and **hover previews** by
- * another (see `embed-notebooks-hover-preview.ts`).
+ * another (see `embed-notebooks-hover-preview.ts`). Both can be disabled
+ * independently via settings (`enableLivePreviewEmbeds`/
+ * `enableHoverPreviewEmbeds`). Each observer runs for the plugin's whole
+ * lifetime, so this is an opt-out for anyone for whom that cost matters.
+ * The setting change is reflected immediately, by tearing down or
+ * (re-)starting the corresponding observer.
  */
 export class EmbedNotebooksFeature implements IFeature {
 	private plugin!: JupyterForObsidian;
@@ -34,8 +39,33 @@ export class EmbedNotebooksFeature implements IFeature {
 			}).bind(this)
 		);
 
-		this.livePreviewCleanup = setupLivePreview(plugin);
-		this.hoverPreviewCleanup = setupHoverPreview(plugin);
+		if (plugin.settings.enableLivePreviewEmbeds) {
+			this.livePreviewCleanup = setupLivePreview(plugin);
+		}
+		this.plugin.settingsProxy.on('change:enableLivePreviewEmbeds', (newVal) => {
+			if (newVal) {
+				if (!this.livePreviewCleanup) {
+					this.livePreviewCleanup = setupLivePreview(plugin);
+				}
+			} else {
+				this.livePreviewCleanup?.unload();
+				this.livePreviewCleanup = undefined;
+			}
+		});
+
+		if (plugin.settings.enableHoverPreviewEmbeds) {
+			this.hoverPreviewCleanup = setupHoverPreview(plugin);
+		}
+		this.plugin.settingsProxy.on('change:enableHoverPreviewEmbeds', (newVal) => {
+			if (newVal) {
+				if (!this.hoverPreviewCleanup) {
+					this.hoverPreviewCleanup = setupHoverPreview(plugin);
+				}
+			} else {
+				this.hoverPreviewCleanup?.unload();
+				this.hoverPreviewCleanup = undefined;
+			}
+		});
 	}
 
 	onunload(): void {
