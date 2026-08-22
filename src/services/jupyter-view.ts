@@ -220,6 +220,13 @@ export class EmbeddedJupyterView extends FileView {
 	}
 
 	protected async onClose() {
+		// Explicitly detach the webview rather than relying solely on
+		// Obsidian's own DOM teardown of this view to trigger its
+		// disconnectedCallback (and release its native Electron guest
+		// process). Safe even if it's already detached (`.remove()` on a
+		// parentless node is a no-op).
+		this.webviewEl?.remove();
+
 		// Let the superclass clean up first
 		await super.onClose();
 

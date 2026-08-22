@@ -56,6 +56,13 @@ export class NotebookEmbedChild extends MarkdownRenderChild {
 	}
 
 	onunload() {
+		// Explicitly detach any webview rather than relying solely on
+		// Obsidian having already removed containerEl from the DOM by the
+		// time onunload() runs. Triggers its disconnectedCallback (and
+		// releases its native Electron guest process) regardless. Safe
+		// even if containerEl is already detached.
+		this.containerEl.empty();
+
 		this.plugin.env.off(JupyterEnvironmentEvent.CHANGE, this.changeEventListener);
 	}
 
