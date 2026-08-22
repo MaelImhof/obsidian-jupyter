@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: main
 
+permissions:
+  contents: read
+
 jobs:
   check-links:
     name: Check for broken documentation links
