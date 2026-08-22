@@ -8,6 +8,9 @@ on:
       - "package.json"
       - "package-lock.json"
 
+permissions:
+  contents: read
+
 jobs:
   build-docs:
     name: Build VitePress docs
